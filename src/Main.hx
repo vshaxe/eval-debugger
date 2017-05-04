@@ -20,9 +20,11 @@ class Main extends adapter.DebugSession {
 		sendEvent(new adapter.DebugSession.InitializedEvent());
 		sendResponse(response);
 		postLaunchActions = [];
+		breakpoints = new Map();
 	}
 
 	var connection:Connection;
+	var breakpoints:Map<String,Array<Int>>;
 	var postLaunchActions:Array<Void->Void>;
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
@@ -35,6 +37,7 @@ class Main extends adapter.DebugSession {
 
 			for (action in postLaunchActions)
 				action();
+			postLaunchActions = [];
 
 			sendResponse(response);
 		}
@@ -58,8 +61,6 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
-		trace("Setting breakpoints " + args);
-
 		if (connection == null)
 			postLaunchActions.push(doSetBreakpoints.bind(response, args));
 		else
@@ -67,19 +68,43 @@ class Main extends adapter.DebugSession {
 	}
 
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
-		function sendBreakpoint(bp:SourceBreakpoint, cb:Breakpoint->Void) {
-			var arg = args.source.path + ":" + bp.line;
-			connection.sendCommand("b", arg, function(msg:{?result:Int, ?error:String}) {
-				if (msg.result != null)
-					cb({verified: true, id: msg.result});
-				else
-					cb({verified: false, message: msg.error});
+		function sendBreakpoints() {
+			if (args.breakpoints.length == 0)
+				return sendResponse(response);
+
+			var verifiedIds = new Array<Int>();
+			function sendBreakpoint(bp:SourceBreakpoint, cb:Breakpoint->Void) {
+				var arg = args.source.path + ":" + bp.line;
+				connection.sendCommand("b", arg, function(msg:{?result:Int, ?error:String}) {
+					if (msg.result != null) {
+						verifiedIds.push(msg.result);
+						cb({verified: true, id: msg.result});
+					} else {
+						cb({verified: false, message: msg.error});
+					}
+				});
+			}
+			asyncMap(args.breakpoints, sendBreakpoint, function(result) {
+				breakpoints.set(args.source.path, verifiedIds);
+				response.body = {breakpoints: result};
+				sendResponse(response);
 			});
 		}
-		asyncMap(args.breakpoints, sendBreakpoint, function(result) {
-			response.body = {breakpoints: result};
-			sendResponse(response);
-		});
+
+		var currentVerifiedIds = breakpoints[args.source.path];
+		if (currentVerifiedIds == null) {
+			sendBreakpoints();
+			return;
+		} else {
+			function clearBreakpoint(id:Int, cb:Any->Void) {
+				connection.sendCommand("d", "" + id, _ -> cb(null));
+			}
+			asyncMap(currentVerifiedIds, clearBreakpoint, function(_) {
+				breakpoints.remove(args.source.path);
+				sendBreakpoints();
+			});
+		}
+
 	}
 
 	static function asyncMap<T,T2>(args:Array<T>, fn:T->(T2->Void)->Void, cb:Array<T2>->Void) {
