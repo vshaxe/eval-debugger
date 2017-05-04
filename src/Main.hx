@@ -72,7 +72,30 @@ class Main extends adapter.DebugSession {
 		switch (type) {
 			case "breakpoint_stop":
 				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
+			case "exception_stop":
+				var evt = new adapter.DebugSession.StoppedEvent("exception", 0);
+				evt.body.text = (cast data).text;
+				sendEvent(evt);
 		}
+	}
+
+	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
+		connection.sendCommand("s");
+		sendResponse(response);
+		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+	}
+
+	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
+		connection.sendCommand("f");
+		sendResponse(response);
+		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+	}
+
+
+	override function nextRequest(response:NextResponse, args:NextArguments) {
+		connection.sendCommand("n");
+		sendResponse(response);
+		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
