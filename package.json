@@ -1,0 +1,53 @@
+{
+	"name": "vshaxe-eval-debug",
+	"displayName": "Haxe macro debugger",
+	"version": "0.0.1",
+	"publisher": "vsghaxe",
+	"description": "Debug adapter for Haxe macro interpreter",
+	"engines": {
+		"vscode": "^1.1.0",
+		"node": "^6.5.0"
+	},
+	"dependencies": {
+		"vscode-debugprotocol": "^1.19.0",
+		"vscode-debugadapter": "^1.19.0"
+	},
+	"scripts": {
+		"prepublish": "haxe build.hxml"
+	},
+	"contributes": {
+		"breakpoints": [
+			{"language": "haxe"}
+		],
+		"debuggers": [
+			{
+				"type": "haxe-eval",
+				"label": "Haxe macro debug",
+				"program": "./bin/evalDebug.js",
+				"runtime": "node",
+				"configurationAttributes": {
+					"launch": {
+						"required": [ "program" ],
+						"properties": {
+							"program": {
+								"type": "string",
+								"description": "Absolute path to a text file.",
+								"default": "${workspaceRoot}/${command:AskForProgramName}"
+							},
+							"stopOnEntry": {
+								"type": "boolean",
+								"description": "Automatically stop after launch.",
+								"default": true
+							},
+							"trace": {
+								"type": "boolean",
+								"description": "Enable logging of the Debug Adapter Protocol.",
+								"default": true
+							}
+						}
+					}
+				}
+			}
+		]
+	}
+}

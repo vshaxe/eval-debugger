@@ -1,0 +1,8 @@
+-cp debugadapter-extern
+-cp src
+-main Main
+-js bin/evalDebug.js
+-dce full
+-D analyzer-optimize
+-lib hxnodejs
+-debug

@@ -1,0 +1,32 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "extensionHost",
+			"request": "launch",
+			"name": "Extension",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}"
+			],
+			"sourceMaps": true,
+			"outFiles": [ "${workspaceRoot}/bin/*.js" ]
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Server",
+			"cwd": "${workspaceRoot}",
+			"program": "${workspaceRoot}/bin/evalDebug.js",
+			"args": [ "--server=4711" ],
+			"sourceMaps": true,
+			"outFiles": [ "${workspaceRoot}/bin/*.js" ]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Extension + Server",
+			"configurations": [ "Extension", "Server" ]
+		}
+	]
+}
