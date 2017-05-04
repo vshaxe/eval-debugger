@@ -4,6 +4,13 @@ import js.node.ChildProcess;
 import js.node.child_process.ChildProcess.ChildProcessEvent;
 import Message;
 
+typedef EvalLaunchRequestArguments = {
+	>protocol.debug.Types.LaunchRequestArguments,
+	var cwd:String;
+	var hxml:String;
+	var stopOnEntry:Bool;
+}
+
 @:keep
 class Main extends adapter.DebugSession {
 	function traceToOutput(value:Dynamic, ?infos:haxe.PosInfos) {
@@ -33,8 +40,9 @@ class Main extends adapter.DebugSession {
 	var postLaunchActions:Array<Void->Void>;
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
-		var hxmlFile:String = (cast args).hxml;
-		var cwd:String = (cast args).cwd;
+		var args:EvalLaunchRequestArguments = cast args;
+		var hxmlFile = args.hxml;
+		var cwd = args.cwd;
 
 		function onConnected(socket) {
 			trace("Haxe connected!");
@@ -46,8 +54,12 @@ class Main extends adapter.DebugSession {
 				action();
 			postLaunchActions = [];
 
-			sendResponse(response);
-			sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
+			if (args.stopOnEntry) {
+				sendResponse(response);
+				sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
+			} else {
+				continueRequest(cast response, null);
+			}
 		}
 
 		function onExit(_, _) {
