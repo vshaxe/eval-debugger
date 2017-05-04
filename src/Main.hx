@@ -77,19 +77,21 @@ class Main extends adapter.DebugSession {
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
 		connection.sendCommand("w", function(msg:{result:Array<StackFrameInfo>}) {
+			var result:Array<StackFrame> = [
+				for (info in msg.result)
+					{
+						id: info.id,
+						name: info.name,
+						source: {path: info.source},
+						line: info.line,
+						column: info.column,
+						endLine: info.endLine,
+						endColumn: info.endColumn
+					}
+			];
+			result.reverse();
 			response.body = {
-				stackFrames: [
-					for (info in msg.result)
-						({
-							id: info.id,
-							name: info.name,
-							source: {path: info.source},
-							line: info.line,
-							column: info.column,
-							endLine: info.endLine,
-							endColumn: info.endColumn
-						} : StackFrame)
-				]
+				stackFrames: result
 			};
 			sendResponse(response);
 		});
@@ -121,6 +123,8 @@ class Main extends adapter.DebugSession {
 			var verifiedIds = new Array<Int>();
 			function sendBreakpoint(bp:SourceBreakpoint, cb:Breakpoint->Void) {
 				var arg = args.source.path + ":" + bp.line;
+				if (bp.column != null)
+					arg += ":" + (bp.column - 1);
 				connection.sendCommand("b", arg, function(msg:{?result:Int, ?error:String}) {
 					if (msg.result != null) {
 						verifiedIds.push(msg.result);
