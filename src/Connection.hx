@@ -7,7 +7,7 @@ class Connection {
 	var buffer:Buffer;
 	var index:Int;
 	var nextMessageLength:Int;
-	var callbacks:Array<Message->Void>;
+	var callbacks:Array<Dynamic->Void>;
 
 	static inline var DEFAULT_BUFFER_SIZE = 4096;
 
@@ -63,7 +63,7 @@ class Connection {
 			callback(msg);
 	}
 
-	public function sendCommand(name:String, ?arg:String, callback:Message->Void) {
+	public function sendCommand<T:{}>(name:String, ?arg:String, callback:T->Void) {
 		var cmd = if (arg == null) name else name + " " + arg;
 		trace('Sending command: $cmd');
 		var body = Buffer.from(cmd, "utf-8");

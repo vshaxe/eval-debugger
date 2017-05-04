@@ -67,13 +67,33 @@ class Main extends adapter.DebugSession {
 	}
 
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
-		for (bp in args.breakpoints) {
+		function sendBreakpoint(bp:SourceBreakpoint, cb:Breakpoint->Void) {
 			var arg = args.source.path + ":" + bp.line;
-			connection.sendCommand("b", arg, function(msg) {
-				trace(msg);
+			connection.sendCommand("b", arg, function(msg:{?result:Int, ?error:String}) {
+				if (msg.result != null)
+					cb({verified: true, id: msg.result});
+				else
+					cb({verified: false, message: msg.error});
 			});
 		}
-		sendResponse(response);
+		asyncMap(args.breakpoints, sendBreakpoint, function(result) {
+			response.body = {breakpoints: result};
+			sendResponse(response);
+		});
+	}
+
+	static function asyncMap<T,T2>(args:Array<T>, fn:T->(T2->Void)->Void, cb:Array<T2>->Void) {
+		var result = [];
+		function loop() {
+			if (args.length == 0)
+				return cb(result);
+			var arg = args.shift();
+			fn(arg, function(v) {
+				result.push(v);
+				loop();
+			});
+		}
+		loop();
 	}
 
 	static function main() {
