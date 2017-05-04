@@ -51,6 +51,7 @@ class Connection {
 			var bytes = buffer.toString("utf-8", 0, nextMessageLength);
 			buffer.copy(buffer, 0, nextMessageLength);
 			index -= nextMessageLength;
+			nextMessageLength = -1;
 			var json = haxe.Json.parse(bytes);
 			onMessage(json);
 		}
