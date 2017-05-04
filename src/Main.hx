@@ -19,26 +19,22 @@ class Main extends adapter.DebugSession {
 		// haxe.Log.trace = traceToOutput;
 		sendEvent(new adapter.DebugSession.InitializedEvent());
 		sendResponse(response);
+		postLaunchActions = [];
 	}
 
 	var connection:Connection;
+	var postLaunchActions:Array<Void->Void>;
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var hxmlFile:String = (cast args).hxml;
 		var cwd:String = (cast args).cwd;
 
-		// function onMessage(msg:Message) {
-		// 	trace('Got message: $msg');
-		// }
-
 		function onConnected(socket) {
 			trace("Haxe connected!");
 			connection = new Connection(socket);
-			// connection.onMessage = onMessage;
 
-			connection.sendCommand("where", function(msg) {
-				trace(msg);
-			});
+			for (action in postLaunchActions)
+				action();
 
 			sendResponse(response);
 		}
@@ -64,12 +60,19 @@ class Main extends adapter.DebugSession {
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
 		trace("Setting breakpoints " + args);
 
+		if (connection == null)
+			postLaunchActions.push(doSetBreakpoints.bind(response, args));
+		else
+			doSetBreakpoints(response, args);
+	}
+
+	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
 		for (bp in args.breakpoints) {
 			var arg = args.source.path + ":" + bp.line;
-			trace(arg);
-			// connection.sendCommand("b", arg);
+			connection.sendCommand("b", arg, function(msg) {
+				trace(msg);
+			});
 		}
-
 		sendResponse(response);
 	}
 
