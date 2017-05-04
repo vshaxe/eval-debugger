@@ -7,6 +7,7 @@ class Connection {
 	var buffer:Buffer;
 	var index:Int;
 	var nextMessageLength:Int;
+	var callbacks:Array<Message->Void>;
 
 	static inline var DEFAULT_BUFFER_SIZE = 4096;
 
@@ -15,6 +16,7 @@ class Connection {
 		buffer = new Buffer(DEFAULT_BUFFER_SIZE);
 		index = 0;
 		nextMessageLength = -1;
+		callbacks = [];
 		socket.on(ReadableEvent.Data, onData);
 	}
 
@@ -35,7 +37,6 @@ class Connection {
 	}
 
 	function onData(data:Buffer) {
-		trace(data.toString());
 		append(data);
 		while (true) {
 			if (nextMessageLength == -1) {
@@ -55,14 +56,20 @@ class Connection {
 		}
 	}
 
-	public dynamic function onMessage(msg:Message) {}
+	function onMessage(msg:Message) {
+		var callback = callbacks.shift();
+		if (callback != null)
+			callback(msg);
+	}
 
-	public function sendCommand(name:String, ?arg:String) {
+	public function sendCommand(name:String, ?arg:String, callback:Message->Void) {
 		var cmd = if (arg == null) name else name + " " + arg;
+		trace('Sending command: $cmd');
 		var body = Buffer.from(cmd, "utf-8");
 		var header = Buffer.alloc(2);
 		header.writeUInt16LE(body.length, 0);
 		socket.write(header);
 		socket.write(body);
+		callbacks.push(callback);
 	}
 }

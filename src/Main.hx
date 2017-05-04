@@ -17,21 +17,29 @@ class Main extends adapter.DebugSession {
 
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
+		sendEvent(new adapter.DebugSession.InitializedEvent());
 		sendResponse(response);
 	}
+
+	var connection:Connection;
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var hxmlFile:String = (cast args).hxml;
 		var cwd:String = (cast args).cwd;
 
-		function onMessage(msg:Message) {
-			trace('Got message: $msg');
-		}
+		// function onMessage(msg:Message) {
+		// 	trace('Got message: $msg');
+		// }
 
 		function onConnected(socket) {
 			trace("Haxe connected!");
-			var connection = new Connection(socket);
-			connection.onMessage = onMessage;
+			connection = new Connection(socket);
+			// connection.onMessage = onMessage;
+
+			connection.sendCommand("where", function(msg) {
+				trace(msg);
+			});
+
 			sendResponse(response);
 		}
 
@@ -55,6 +63,13 @@ class Main extends adapter.DebugSession {
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
 		trace("Setting breakpoints " + args);
+
+		for (bp in args.breakpoints) {
+			var arg = args.source.path + ":" + bp.line;
+			trace(arg);
+			// connection.sendCommand("b", arg);
+		}
+
 		sendResponse(response);
 	}
 
