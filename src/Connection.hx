@@ -58,6 +58,7 @@ class Connection {
 	}
 
 	function onMessage(msg:Message) {
+		trace('GOT MESSAGE ${haxe.Json.stringify(msg)}');
 		var callback = callbacks.shift();
 		if (callback != null)
 			callback(msg);

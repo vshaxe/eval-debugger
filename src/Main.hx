@@ -40,6 +40,7 @@ class Main extends adapter.DebugSession {
 			postLaunchActions = [];
 
 			sendResponse(response);
+			sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
 		}
 
 		function onExit(_, _) {
@@ -58,6 +59,16 @@ class Main extends adapter.DebugSession {
 			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Inherit});
 			haxeProcess.on(ChildProcessEvent.Exit, onExit);
 		});
+	}
+
+	override function threadsRequest(response:ThreadsResponse) {
+		// TODO: support other threads?
+		response.body = {threads: [{id: 0, name: "Interp"}]};
+		sendResponse(response);
+	}
+
+	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
+		connection.sendCommand("c", _ -> sendResponse(response));
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
