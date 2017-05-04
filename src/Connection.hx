@@ -57,14 +57,20 @@ class Connection {
 		}
 	}
 
-	function onMessage(msg:Message) {
+	public dynamic function onEvent<T>(type:String, data:T) {}
+
+	function onMessage<T>(msg:Message<T>) {
 		trace('GOT MESSAGE ${haxe.Json.stringify(msg)}');
-		var callback = callbacks.shift();
-		if (callback != null)
-			callback(msg);
+		if (msg.event != null) {
+			onEvent(msg.event, msg.result);
+		} else {
+			var callback = callbacks.shift();
+			if (callback != null)
+				callback(msg);
+		}
 	}
 
-	public function sendCommand<T:{}>(name:String, ?arg:String, callback:T->Void) {
+	public function sendCommand<T:{}>(name:String, ?arg:String, ?callback:T->Void) {
 		var cmd = if (arg == null) name else name + " " + arg;
 		trace('Sending command: $cmd');
 		var body = Buffer.from(cmd, "utf-8");
@@ -72,6 +78,7 @@ class Connection {
 		header.writeUInt16LE(body.length, 0);
 		socket.write(header);
 		socket.write(body);
-		callbacks.push(callback);
+		if (callback != null)
+			callbacks.push(callback);
 	}
 }

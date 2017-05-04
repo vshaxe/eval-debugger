@@ -15,6 +15,11 @@ class Main extends adapter.DebugSession {
 		sendEvent(new adapter.DebugSession.OutputEvent(msg));
 	}
 
+	function new() {
+		super();
+		setDebuggerColumnsStartAt1(false);
+	}
+
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
 		sendEvent(new adapter.DebugSession.InitializedEvent());
@@ -34,6 +39,8 @@ class Main extends adapter.DebugSession {
 		function onConnected(socket) {
 			trace("Haxe connected!");
 			connection = new Connection(socket);
+
+			connection.onEvent = onEvent;
 
 			for (action in postLaunchActions)
 				action();
@@ -61,6 +68,33 @@ class Main extends adapter.DebugSession {
 		});
 	}
 
+	function onEvent<T>(type:String, data:T) {
+		switch (type) {
+			case "breakpoint_stop":
+				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
+		}
+	}
+
+	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
+		connection.sendCommand("w", function(msg:{result:Array<StackFrameInfo>}) {
+			response.body = {
+				stackFrames: [
+					for (info in msg.result)
+						({
+							id: info.id,
+							name: info.name,
+							source: {path: info.source},
+							line: info.line,
+							column: info.column,
+							endLine: info.endLine,
+							endColumn: info.endColumn
+						} : StackFrame)
+				]
+			};
+			sendResponse(response);
+		});
+	}
+
 	override function threadsRequest(response:ThreadsResponse) {
 		// TODO: support other threads?
 		response.body = {threads: [{id: 0, name: "Interp"}]};
@@ -68,7 +102,8 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand("c", _ -> sendResponse(response));
+		connection.sendCommand("c");
+		sendResponse(response);
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
@@ -135,4 +170,14 @@ class Main extends adapter.DebugSession {
 	static function main() {
 		adapter.DebugSession.run(Main);
 	}
+}
+
+typedef StackFrameInfo = {
+	var id:Int;
+	var name:String;
+	var source:String;
+	var line:Int;
+	var column:Int;
+	var endLine:Int;
+	var endColumn:Int;
 }
