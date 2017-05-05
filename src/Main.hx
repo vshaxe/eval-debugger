@@ -91,6 +91,23 @@ class Main extends adapter.DebugSession {
 		}
 	}
 
+	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
+		connection.sendCommand("scopes", function(msg:{result:Array<{id:Int, name:String}>}) {
+			var scopes:Array<Scope> = [for (s in msg.result) cast new adapter.DebugSession.Scope(s.name, s.id)];
+			response.body = {scopes: scopes};
+			sendResponse(response);
+		});
+	}
+
+	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
+		connection.sendCommand("vars", "" + args.variablesReference, function(msg:{result:Array<{id:Int, name:String}>}) {
+			trace(args);
+			trace(msg);
+			response.body = {variables: [for (v in msg.result) {name: v.name, value: "", variablesReference: v.id}]};
+			sendResponse(response);
+		});
+	}
+
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
 		connection.sendCommand("s");
 		sendResponse(response);
