@@ -2,6 +2,7 @@ import protocol.debug.Types;
 import js.node.Net;
 import js.node.ChildProcess;
 import js.node.child_process.ChildProcess.ChildProcessEvent;
+import js.node.net.Socket.SocketEvent;
 import Message;
 
 typedef EvalLaunchRequestArguments = {
@@ -47,8 +48,9 @@ class Main extends adapter.DebugSession {
 		function onConnected(socket) {
 			trace("Haxe connected!");
 			connection = new Connection(socket);
-
 			connection.onEvent = onEvent;
+
+			socket.on(SocketEvent.Error, error -> trace('Socket error: $error'));
 
 			for (action in postLaunchActions)
 				action();
@@ -63,7 +65,7 @@ class Main extends adapter.DebugSession {
 		}
 
 		function onExit(_, _) {
-			trace("Haxe exited!");
+			sendEvent(new adapter.DebugSession.TerminatedEvent(false));
 		}
 
 		var server = Net.createServer(onConnected);
