@@ -14,7 +14,7 @@ typedef EvalLaunchRequestArguments = {
 
 enum VariablesReference {
 	Scope(frameId:Int, scopeNumber:Int);
-
+	Var(frameId:Int, expr:String);
 }
 
 class StopContext {
@@ -63,15 +63,31 @@ class StopContext {
 
 		switch (ref) {
 			case Scope(frameId, scopeId):
-				maybeSwitchFrame(frameId, getScopeVars.bind(scopeId, callback));
+				maybeSwitchFrame(frameId, getScopeVars.bind(frameId, scopeId, callback));
+			case Var(frameId, expr):
+				maybeSwitchFrame(frameId, getChildVars.bind(frameId, expr, callback));
 		}
 	}
 
-	function getScopeVars(scopeId:Int, callback:Array<Variable>->Void) {
-		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<{name:String, type:String, value:String}>}) {
-			var vars:Array<Variable> = [for (v in msg.result) {name: v.name, value: v.value, type: v.type, variablesReference: 0}];
+	function getScopeVars(frameId:Int, scopeId:Int, callback:Array<Variable>->Void) {
+		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
+			var vars:Array<Variable> = [];
+			for (varInfo in msg.result) {
+				var v:Variable = {name: varInfo.name, value: varInfo.value, type: varInfo.type, variablesReference: 0};
+				if (varInfo.structured) {
+					var reference = getNextId();
+					references[reference] = Var(frameId, varInfo.name);
+					v.variablesReference = reference;
+				}
+				vars.push(v);
+			};
 			callback(vars);
 		});
+	}
+
+	function getChildVars(frameId:Int, expr:String, callback:Array<Variable>->Void) {
+		trace("Showing children of " + expr);
+		callback([]); // TODO
 	}
 }
 
@@ -313,4 +329,11 @@ typedef StackFrameInfo = {
 	var endLine:Int;
 	var endColumn:Int;
 	var artificial:Bool;
+}
+
+typedef VarInfo = {
+	var name:String;
+	var type:String;
+	var value:String;
+	var structured:Bool;
 }
