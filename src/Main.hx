@@ -33,7 +33,7 @@ class StopContext {
 		if (currentFrameId != frameId) {
 			connection.sendCommand("frame", "" + frameId, function(_) {
 				currentFrameId = frameId;
-				doGetScopes(callback)
+				doGetScopes(callback);
 			});
 		} else {
 			doGetScopes(callback);

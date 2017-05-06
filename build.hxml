@@ -1,4 +1,4 @@
--cp debugadapter-extern
+-cp debugadapter-extern/src
 -cp src
 -main Main
 -js bin/evalDebug.js
