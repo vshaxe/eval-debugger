@@ -21,7 +21,7 @@ class StopContext {
 	var connection:Connection;
 	var references = new Map<Int,VariablesReference>();
 	var nextId = 1;
-	var currentFrameId = 0; // current is always the top one at the start
+	var currentFrameId = -1; // current is always the top one at the start
 
 	public function new(connection) {
 		this.connection = connection;
@@ -179,19 +179,28 @@ class Main extends adapter.DebugSession {
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
 		connection.sendCommand("w", function(msg:{result:Array<StackFrameInfo>}) {
-			var result:Array<StackFrame> = [
-				for (info in msg.result)
-					{
+			var result:Array<StackFrame> = [];
+			for (info in msg.result) {
+				if (info.artificial) {
+					result.push({
+						id: info.id,
+						name: "Internal",
+						line: 0,
+						column: 0,
+						presentationHint: label,
+					});
+				} else {
+					result.push({
 						id: info.id,
 						name: info.name,
 						source: {path: info.source},
 						line: info.line,
 						column: info.column,
 						endLine: info.endLine,
-						endColumn: info.endColumn
-					}
-			];
-			result.reverse();
+						endColumn: info.endColumn,
+					});
+				}
+			}
 			response.body = {
 				stackFrames: result
 			};
@@ -286,4 +295,5 @@ typedef StackFrameInfo = {
 	var column:Int;
 	var endLine:Int;
 	var endColumn:Int;
+	var artificial:Bool;
 }
