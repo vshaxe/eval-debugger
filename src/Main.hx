@@ -30,13 +30,17 @@ class StopContext {
 	inline function getNextId() return nextId++;
 
 	public function getScopes(frameId:Int, callback:Array<Scope>->Void) {
+		maybeSwitchFrame(frameId, doGetScopes.bind(callback));
+	}
+
+	function maybeSwitchFrame(frameId:Int, callback:Void->Void) {
 		if (currentFrameId != frameId) {
 			connection.sendCommand("frame", "" + frameId, function(_) {
 				currentFrameId = frameId;
-				doGetScopes(callback);
+				callback();
 			});
 		} else {
-			doGetScopes(callback);
+			callback();
 		}
 	}
 
@@ -44,14 +48,27 @@ class StopContext {
 		connection.sendCommand("scopes", function(msg:{result:Array<{id:Int, name:String}>}) {
 			var scopes:Array<Scope> = [];
 			for (scopeInfo in msg.result) {
-				scopes.push(cast new adapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id));
+				var reference = getNextId();
+				references[reference] = Scope(currentFrameId, scopeInfo.id);
+				scopes.push(cast new adapter.DebugSession.Scope(scopeInfo.name, reference));
 			}
 			callback(scopes);
 		});
 	}
 
 	public function getVariables(reference:Int, callback:Array<Variable>->Void) {
-		connection.sendCommand("vars", "" + reference, function(msg:{result:Array<{id:Int, name:String}>}) {
+		var ref = references[reference];
+		if (ref == null)
+			return callback([]); // is this real?
+
+		switch (ref) {
+			case Scope(frameId, scopeId):
+				maybeSwitchFrame(frameId, getScopeVars.bind(scopeId, callback));
+		}
+	}
+
+	function getScopeVars(scopeId:Int, callback:Array<Variable>->Void) {
+		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<{id:Int, name:String}>}) {
 			var vars:Array<Variable> = [for (v in msg.result) {name: v.name, value: "", variablesReference: v.id}];
 			callback(vars);
 		});
