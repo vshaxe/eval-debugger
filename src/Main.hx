@@ -12,6 +12,53 @@ typedef EvalLaunchRequestArguments = {
 	var stopOnEntry:Bool;
 }
 
+enum VariablesReference {
+	Scope(frameId:Int, scopeNumber:Int);
+
+}
+
+class StopContext {
+	var connection:Connection;
+	var references = new Map<Int,VariablesReference>();
+	var nextId = 1;
+	var currentFrameId = 0; // current is always the top one at the start
+
+	public function new(connection) {
+		this.connection = connection;
+	}
+
+	inline function getNextId() return nextId++;
+
+	public function getScopes(frameId:Int, callback:Array<Scope>->Void) {
+		if (currentFrameId != frameId) {
+			connection.sendCommand("frame", "" + frameId, function(_) {
+				currentFrameId = frameId;
+				doGetScopes(callback)
+			});
+		} else {
+			doGetScopes(callback);
+		}
+	}
+
+	function doGetScopes(callback:Array<Scope>->Void) {
+		connection.sendCommand("scopes", function(msg:{result:Array<{id:Int, name:String}>}) {
+			var scopes:Array<Scope> = [];
+			for (scopeInfo in msg.result) {
+				scopes.push(cast new adapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id));
+			}
+			callback(scopes);
+		});
+	}
+
+	public function getVariables(reference:Int, callback:Array<Variable>->Void) {
+		connection.sendCommand("vars", "" + reference, function(msg:{result:Array<{id:Int, name:String}>}) {
+			var vars:Array<Variable> = [for (v in msg.result) {name: v.name, value: "", variablesReference: v.id}];
+			callback(vars);
+		});
+	}
+}
+
+
 @:keep
 class Main extends adapter.DebugSession {
 	function traceToOutput(value:Dynamic, ?infos:haxe.PosInfos) {
@@ -82,11 +129,15 @@ class Main extends adapter.DebugSession {
 		});
 	}
 
+	var stopContext:StopContext;
+
 	function onEvent<T>(type:String, data:T) {
 		switch (type) {
 			case "breakpoint_stop":
+				stopContext = new StopContext(connection);
 				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
 			case "exception_stop":
+				stopContext = new StopContext(connection);
 				var evt = new adapter.DebugSession.StoppedEvent("exception", 0);
 				evt.body.text = (cast data).text;
 				sendEvent(evt);
@@ -94,18 +145,15 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
-		connection.sendCommand("scopes", function(msg:{result:Array<{id:Int, name:String}>}) {
-			var scopes:Array<Scope> = [for (s in msg.result) cast new adapter.DebugSession.Scope(s.name, s.id)];
+		stopContext.getScopes(args.frameId, function(scopes) {
 			response.body = {scopes: scopes};
 			sendResponse(response);
 		});
 	}
 
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
-		connection.sendCommand("vars", "" + args.variablesReference, function(msg:{result:Array<{id:Int, name:String}>}) {
-			trace(args);
-			trace(msg);
-			response.body = {variables: [for (v in msg.result) {name: v.name, value: "", variablesReference: v.id}]};
+		stopContext.getVariables(args.variablesReference, function(vars) {
+			response.body = {variables: vars};
 			sendResponse(response);
 		});
 	}
