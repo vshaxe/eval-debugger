@@ -68,8 +68,8 @@ class StopContext {
 	}
 
 	function getScopeVars(scopeId:Int, callback:Array<Variable>->Void) {
-		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<{id:Int, name:String}>}) {
-			var vars:Array<Variable> = [for (v in msg.result) {name: v.name, value: "", variablesReference: v.id}];
+		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<{name:String, type:String, value:String}>}) {
+			var vars:Array<Variable> = [for (v in msg.result) {name: v.name, value: v.value, type: v.type, variablesReference: 0}];
 			callback(vars);
 		});
 	}
