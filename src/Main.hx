@@ -21,7 +21,7 @@ class StopContext {
 	var connection:Connection;
 	var references = new Map<Int,VariablesReference>();
 	var nextId = 1;
-	var currentFrameId = -1; // current is always the top one at the start
+	var currentFrameId = 0; // current is always the top one at the start
 
 	public function new(connection) {
 		this.connection = connection;
