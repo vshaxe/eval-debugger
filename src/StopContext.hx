@@ -59,23 +59,21 @@ class StopContext {
 
 	function getScopeVars(frameId:Int, scopeId:Int, callback:Array<Variable>->Void) {
 		connection.sendCommand("vars_scope", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
-			callback([for (v in msg.result) varInfoToVariable(frameId, v, "")]);
+			callback([for (v in msg.result) varInfoToVariable(frameId, v)]);
 		});
 	}
 
 	function getChildVars(frameId:Int, expr:String, callback:Array<Variable>->Void) {
 		connection.sendCommand("vars_inner", expr, function(msg:{result:Array<VarInfo>}) {
-			inline function mkAccess(expr:String, name:String)
-				return if (name.charCodeAt(0) == "[".code) expr else expr + "."; // meh...
-			callback([for (v in msg.result) varInfoToVariable(frameId, v, mkAccess(expr, v.name))]);
+			callback([for (v in msg.result) varInfoToVariable(frameId, v)]);
 		});
 	}
 
-	function varInfoToVariable(frameId:Int, varInfo:VarInfo, exprPrefix:String):Variable {
+	function varInfoToVariable(frameId:Int, varInfo:VarInfo):Variable {
 		var v:Variable = {name: varInfo.name, value: varInfo.value, type: varInfo.type, variablesReference: 0};
 		if (varInfo.structured) {
 			var reference = getNextId();
-			references[reference] = Var(frameId, exprPrefix + varInfo.name);
+			references[reference] = Var(frameId, varInfo.access);
 			v.variablesReference = reference;
 		}
 		return v;
@@ -87,4 +85,5 @@ typedef VarInfo = {
 	var type:String;
 	var value:String;
 	var structured:Bool;
+	var access:String;
 }
