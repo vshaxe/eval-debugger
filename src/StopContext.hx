@@ -80,10 +80,18 @@ class StopContext {
 	}
 }
 
+/** Info about a scope variable or its subvariable (a field, array element or something) as returned by Haxe eval debugger **/
 typedef VarInfo = {
+	/** Variable/field name, for array elements or enum ctor arguments looks like `[0]` **/
 	var name:String;
+	/** Value type **/
 	var type:String;
+	/** Current value to display (structured child values are rendered with `...`) **/
 	var value:String;
+	/** True if this variable is structured, meaning that we can request "subvariables" (fields/elements) **/
 	var structured:Bool;
+	/** Access expression used to reference this variable.
+	    For scope-level vars it's the same as name, for child vars it's an expression like `a.b[0].c[1]`.
+	**/
 	var access:String;
 }
