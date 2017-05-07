@@ -31,6 +31,7 @@ class Main extends adapter.DebugSession {
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
 		sendEvent(new adapter.DebugSession.InitializedEvent());
+		response.body.supportsSetVariable = true;
 		sendResponse(response);
 		postLaunchActions = [];
 		breakpoints = new Map();
@@ -107,6 +108,14 @@ class Main extends adapter.DebugSession {
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
 		stopContext.getVariables(args.variablesReference, function(vars) {
 			response.body = {variables: vars};
+			sendResponse(response);
+		});
+	}
+
+	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
+		stopContext.setVariable(args.variablesReference, args.value, function(varInfo) {
+			if (varInfo != null)
+				response.body = {value: varInfo.value};
 			sendResponse(response);
 		});
 	}

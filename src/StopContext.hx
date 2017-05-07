@@ -57,6 +57,25 @@ class StopContext {
 		}
 	}
 
+	public function setVariable(reference:Int, value:String, callback:Null<VarInfo>->Void) {
+		var ref = references[reference];
+		if (ref == null)
+			return callback(null);
+
+		switch (ref) {
+			case Scope(frameId, scopeId):
+				callback(null); // this cannot happen, right?
+			case Var(frameId, expr):
+				maybeSwitchFrame(frameId, setVar.bind(expr, value, callback));
+		}
+	}
+
+	function setVar(access:String, value:String, callback:Null<VarInfo>->Void) {
+		connection.sendCommand("s", '$access = $value', function(msg:{?result:VarInfo, ?error:String}) {
+			callback(msg.result);
+		});
+	}
+
 	function getScopeVars(frameId:Int, scopeId:Int, callback:Array<Variable>->Void) {
 		connection.sendCommand("vars_scope", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
 			callback([for (v in msg.result) varInfoToVariable(frameId, v)]);
