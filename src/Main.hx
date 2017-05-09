@@ -75,8 +75,7 @@ class Main extends adapter.DebugSession {
 			var args = [
 				"--cwd", cwd,
 				hxmlFile,
-				"-D", "interp-debugger",
-				"-D", 'interp-debugger-socket=127.0.0.1:$port'
+				"-D", 'eval-debugger=127.0.0.1:$port',
 			];
 			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Inherit});
 			haxeProcess.on(ChildProcessEvent.Exit, onExit);
