@@ -112,7 +112,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
-		stopContext.setVariable(args.variablesReference, args.value, function(varInfo) {
+		stopContext.setVariable(args.variablesReference, args.name, args.value, function(varInfo) {
 			if (varInfo != null)
 				response.body = {value: varInfo.value};
 			sendResponse(response);

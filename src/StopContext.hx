@@ -1,5 +1,8 @@
 import protocol.debug.Types;
 
+typedef ReferenceId = Int;
+typedef AccessExpr = String;
+
 enum VariablesReference {
 	Scope(frameId:Int, scopeNumber:Int);
 	Var(frameId:Int, expr:String);
@@ -7,7 +10,8 @@ enum VariablesReference {
 
 class StopContext {
 	var connection:Connection;
-	var references = new Map<Int,VariablesReference>();
+	var references = new Map<ReferenceId,VariablesReference>();
+	var fields = new Map<ReferenceId,Map<String,AccessExpr>>();
 	var nextId = 1;
 	var currentFrameId = 0; // current is always the top one at the start
 
@@ -15,7 +19,7 @@ class StopContext {
 		this.connection = connection;
 	}
 
-	inline function getNextId() return nextId++;
+	inline function getNextId():ReferenceId return nextId++;
 
 	public function getScopes(frameId:Int, callback:Array<Scope>->Void) {
 		maybeSwitchFrame(frameId, doGetScopes.bind(callback));
@@ -44,29 +48,32 @@ class StopContext {
 		});
 	}
 
-	public function getVariables(reference:Int, callback:Array<Variable>->Void) {
+	public function getVariables(reference:ReferenceId, callback:Array<Variable>->Void) {
 		var ref = references[reference];
 		if (ref == null)
 			return callback([]); // is this real?
 
 		switch (ref) {
 			case Scope(frameId, scopeId):
-				maybeSwitchFrame(frameId, getScopeVars.bind(frameId, scopeId, callback));
+				maybeSwitchFrame(frameId, getScopeVars.bind(frameId, scopeId, reference, callback));
 			case Var(frameId, expr):
-				maybeSwitchFrame(frameId, getChildVars.bind(frameId, expr, callback));
+				maybeSwitchFrame(frameId, getChildVars.bind(frameId, expr, reference, callback));
 		}
 	}
 
-	public function setVariable(reference:Int, value:String, callback:Null<VarInfo>->Void) {
+	public function setVariable(reference:ReferenceId, name:String, value:String, callback:Null<VarInfo>->Void) {
 		var ref = references[reference];
-		if (ref == null)
-			return callback(null);
-
+		if (ref == null) return callback(null);
+		var fields = fields[reference];
+		if (fields == null) return callback(null);
+		var access = fields[name];
+		if (access == null) return callback(null);
 		switch (ref) {
-			case Scope(frameId, scopeId):
-				callback(null); // this cannot happen, right?
-			case Var(frameId, expr):
-				maybeSwitchFrame(frameId, setVar.bind(expr, value, callback));
+			case Scope(frameId, _):
+				callback(null);
+				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
+			case Var(frameId, _):
+				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
 		}
 	}
 
@@ -76,15 +83,29 @@ class StopContext {
 		});
 	}
 
-	function getScopeVars(frameId:Int, scopeId:Int, callback:Array<Variable>->Void) {
+	function getScopeVars(frameId:Int, scopeId:Int, reference:ReferenceId, callback:Array<Variable>->Void) {
 		connection.sendCommand("vars_scope", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
-			callback([for (v in msg.result) varInfoToVariable(frameId, v)]);
+			var result = [];
+			var subvars = new Map();
+			fields[reference] = subvars;
+			for (v in msg.result) {
+				result.push(varInfoToVariable(frameId, v));
+				subvars[v.name] = v.access;
+			}
+			callback(result);
 		});
 	}
 
-	function getChildVars(frameId:Int, expr:String, callback:Array<Variable>->Void) {
+	function getChildVars(frameId:Int, expr:String, reference:ReferenceId, callback:Array<Variable>->Void) {
 		connection.sendCommand("vars_inner", expr, function(msg:{result:Array<VarInfo>}) {
-			callback([for (v in msg.result) varInfoToVariable(frameId, v)]);
+			var result = [];
+			var subvars = new Map();
+			fields[reference] = subvars;
+			for (v in msg.result) {
+				result.push(varInfoToVariable(frameId, v));
+				subvars[v.name] = v.access;
+			}
+			callback(result);
 		});
 	}
 
@@ -112,5 +133,5 @@ typedef VarInfo = {
 	/** Access expression used to reference this variable.
 	    For scope-level vars it's the same as name, for child vars it's an expression like `a.b[0].c[1]`.
 	**/
-	var access:String;
+	var access:AccessExpr;
 }
