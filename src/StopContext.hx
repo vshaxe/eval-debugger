@@ -37,12 +37,21 @@ class StopContext {
 	}
 
 	function doGetScopes(callback:Array<Scope>->Void) {
-		connection.sendCommand("scopes", function(msg:{result:Array<{id:Int, name:String}>}) {
+		connection.sendCommand("scopes", function(msg:{result:Array<ScopeInfo>}) {
 			var scopes:Array<Scope> = [];
 			for (scopeInfo in msg.result) {
 				var reference = getNextId();
 				references[reference] = Scope(currentFrameId, scopeInfo.id);
-				scopes.push(cast new adapter.DebugSession.Scope(scopeInfo.name, reference));
+				var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, reference);
+				if (scopeInfo.pos != null) {
+					var p = scopeInfo.pos;
+					scope.source = {path: p.source};
+					scope.line = p.line;
+					scope.column = p.column;
+					scope.endLine = p.endLine;
+					scope.endColumn = p.endColumn;
+				}
+				scopes.push(scope);
 			}
 			callback(scopes);
 		});
@@ -134,4 +143,10 @@ typedef VarInfo = {
 	    For scope-level vars it's the same as name, for child vars it's an expression like `a.b[0].c[1]`.
 	**/
 	var access:AccessExpr;
+}
+
+typedef ScopeInfo = {
+	var id:Int;
+	var name:String;
+	@:optional var pos:{source:String, line:Int, column:Int, endLine:Int, endColumn:Int};
 }
