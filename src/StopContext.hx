@@ -145,8 +145,12 @@ typedef VarInfo = {
 	var access:AccessExpr;
 }
 
+/** Info about a scope **/
 typedef ScopeInfo = {
+	/** Scope identifier to use for the `vars` request. **/
 	var id:Int;
+	/** Name of the scope (e.g. Locals, Captures, etc) **/
 	var name:String;
+	/** Position information about scope boundaries, if present **/
 	@:optional var pos:{source:String, line:Int, column:Int, endLine:Int, endColumn:Int};
 }
