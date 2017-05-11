@@ -93,7 +93,7 @@ class StopContext {
 	}
 
 	function getScopeVars(frameId:Int, scopeId:Int, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand("vars_scope", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
+		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
 			var result = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
@@ -106,7 +106,7 @@ class StopContext {
 	}
 
 	function getChildVars(frameId:Int, expr:String, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand("vars_inner", expr, function(msg:{result:Array<VarInfo>}) {
+		connection.sendCommand("structure", expr, function(msg:{result:Array<VarInfo>}) {
 			var result = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
