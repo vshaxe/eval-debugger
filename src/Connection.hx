@@ -7,7 +7,7 @@ class Connection {
 	var buffer:Buffer;
 	var index:Int;
 	var nextMessageLength:Int;
-	var callbacks:Array<Dynamic->Void>;
+	var callbacks:Array<Null<Message.Error>->Null<Dynamic>->Void>;
 
 	static inline var DEFAULT_BUFFER_SIZE = 4096;
 
@@ -59,19 +59,24 @@ class Connection {
 
 	public dynamic function onEvent<T>(type:String, data:T) {}
 
-	function onMessage<T>(msg:Message<T>) {
+	function onMessage<T>(msg:Message) {
 		trace('GOT MESSAGE ${haxe.Json.stringify(msg)}');
-		if (msg.event != null) {
-			onEvent(msg.event, msg.result);
+		if (msg.id == null) {
+			onEvent(msg.method, msg.params);
 		} else {
 			var callback = callbacks.shift();
-			if (callback != null)
-				callback(msg);
+			if (callback != null) {
+				callback(msg.error, msg.result);
+			}
 		}
 	}
 
-	public function sendCommand<T:{}>(name:String, ?arg:String, ?callback:T->Void) {
-		var cmd = if (arg == null) name else name + " " + arg;
+	public function sendCommand<T:{}>(name:String, ?params:{}, ?callback:Null<Message.Error>->Null<T>->Void) {
+		var cmd = haxe.Json.stringify({
+			id: 0,
+			method: name,
+			params: params
+		});
 		trace('Sending command: $cmd');
 		var body = Buffer.from(cmd, "utf-8");
 		var header = Buffer.alloc(2);

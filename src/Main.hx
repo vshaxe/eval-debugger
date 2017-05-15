@@ -120,30 +120,30 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
-		connection.sendCommand("s");
+		connection.sendCommand("stepIn");
 		sendResponse(response);
 		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
-		connection.sendCommand("f");
+		connection.sendCommand("stepOut");
 		sendResponse(response);
 		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
-		connection.sendCommand("n");
+		connection.sendCommand("next");
 		sendResponse(response);
 		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
-		connection.sendCommand("w", function(msg:{result:Array<StackFrameInfo>}) {
-			var result:Array<StackFrame> = [];
-			for (info in msg.result) {
+		connection.sendCommand("stackTrace", function(error, result:Array<StackFrameInfo>) {
+			var r:Array<StackFrame> = [];
+			for (info in result) {
 				if (info.artificial) {
-					result.push({
+					r.push({
 						id: info.id,
 						name: "Internal",
 						line: 0,
@@ -151,7 +151,7 @@ class Main extends adapter.DebugSession {
 						presentationHint: label,
 					});
 				} else {
-					result.push({
+					r.push({
 						id: info.id,
 						name: info.name,
 						source: {path: info.source},
@@ -163,7 +163,7 @@ class Main extends adapter.DebugSession {
 				}
 			}
 			response.body = {
-				stackFrames: result
+				stackFrames: r
 			};
 			sendResponse(response);
 		});
@@ -176,7 +176,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand("c");
+		connection.sendCommand("continue");
 		sendResponse(response);
 	}
 
@@ -194,15 +194,15 @@ class Main extends adapter.DebugSession {
 
 			var verifiedIds = new Array<Int>();
 			function sendBreakpoint(bp:SourceBreakpoint, cb:Breakpoint->Void) {
-				var arg = args.source.path + ":" + bp.line;
+				var arg:{file:String, line:Int, ?column:Int} = {file: args.source.path, line: bp.line};
 				if (bp.column != null)
-					arg += ":" + (bp.column - 1);
-				connection.sendCommand("b", arg, function(msg:{?result:Int, ?error:String}) {
-					if (msg.result != null) {
-						verifiedIds.push(msg.result);
-						cb({verified: true, id: msg.result});
+					arg.column = bp.column - 1;
+				connection.sendCommand("setBreakpoint", arg, function(error, result:{id:Int}) {
+					if (error == null) {
+						verifiedIds.push(result.id);
+						cb({verified: true, id: result.id});
 					} else {
-						cb({verified: false, message: msg.error});
+						cb({verified: false, message: error.message});
 					}
 				});
 			}
@@ -219,7 +219,7 @@ class Main extends adapter.DebugSession {
 			return;
 		} else {
 			function clearBreakpoint(id:Int, cb:Any->Void) {
-				connection.sendCommand("d", "" + id, _ -> cb(null));
+				connection.sendCommand("removeBreakpoint", {id: id}, (_,_) -> cb(null));
 			}
 			asyncMap(currentVerifiedIds, clearBreakpoint, function(_) {
 				breakpoints.remove(args.source.path);

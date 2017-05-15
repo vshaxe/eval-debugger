@@ -1,5 +1,12 @@
-typedef Message<T> = {
-    @:optional var event:String;
-    @:optional var result:T;
-    @:optional var error:String;
+typedef Message = {
+    @:optional var id:Int;
+    @:optional var method:String;
+    @:optional var params:Dynamic;
+    @:optional var result:Dynamic;
+    @:optional var error:Error;
+}
+
+typedef Error = {
+    var code:Int;
+    var message:String;
 }

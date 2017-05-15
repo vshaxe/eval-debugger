@@ -27,7 +27,7 @@ class StopContext {
 
 	function maybeSwitchFrame(frameId:Int, callback:Void->Void) {
 		if (currentFrameId != frameId) {
-			connection.sendCommand("frame", "" + frameId, function(_) {
+			connection.sendCommand("switchFrame", {id: frameId}, function(_,_) {
 				currentFrameId = frameId;
 				callback();
 			});
@@ -37,9 +37,9 @@ class StopContext {
 	}
 
 	function doGetScopes(callback:Array<Scope>->Void) {
-		connection.sendCommand("scopes", function(msg:{result:Array<ScopeInfo>}) {
+		connection.sendCommand("getScopes", function(error, result:Array<ScopeInfo>) {
 			var scopes:Array<Scope> = [];
-			for (scopeInfo in msg.result) {
+			for (scopeInfo in result) {
 				var reference = getNextId();
 				references[reference] = Scope(currentFrameId, scopeInfo.id);
 				var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, reference);
@@ -87,34 +87,34 @@ class StopContext {
 	}
 
 	function setVar(access:String, value:String, callback:Null<VarInfo>->Void) {
-		connection.sendCommand("s", '$access = $value', function(msg:{?result:VarInfo, ?error:String}) {
-			callback(msg.result);
+		connection.sendCommand("setVariable", {expr: access, value: value}, function(error, result:VarInfo) {
+			callback(result);
 		});
 	}
 
 	function getScopeVars(frameId:Int, scopeId:Int, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand("vars", "" + scopeId, function(msg:{result:Array<VarInfo>}) {
-			var result = [];
+		connection.sendCommand("getScopeVariables", {id: scopeId}, function(error, result:Array<VarInfo>) {
+			var r = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
-			for (v in msg.result) {
-				result.push(varInfoToVariable(frameId, v));
+			for (v in result) {
+				r.push(varInfoToVariable(frameId, v));
 				subvars[v.name] = v.access;
 			}
-			callback(result);
+			callback(r);
 		});
 	}
 
 	function getChildVars(frameId:Int, expr:String, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand("structure", expr, function(msg:{result:Array<VarInfo>}) {
-			var result = [];
+		connection.sendCommand("getStructure", {expr: expr}, function(error, result:Array<VarInfo>) {
+			var r = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
-			for (v in msg.result) {
-				result.push(varInfoToVariable(frameId, v));
+			for (v in result) {
+				r.push(varInfoToVariable(frameId, v));
 				subvars[v.name] = v.access;
 			}
-			callback(result);
+			callback(r);
 		});
 	}
 
