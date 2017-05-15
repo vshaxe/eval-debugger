@@ -86,10 +86,10 @@ class Main extends adapter.DebugSession {
 
 	function onEvent<T>(type:String, data:T) {
 		switch (type) {
-			case "breakpoint_stop":
+			case "breakpointStop":
 				stopContext = new StopContext(connection);
 				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
-			case "exception_stop":
+			case "exceptionStop":
 				stopContext = new StopContext(connection);
 				var evt = new adapter.DebugSession.StoppedEvent("exception", 0);
 				evt.body.text = (cast data).text;
