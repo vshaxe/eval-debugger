@@ -1,6 +1,7 @@
 import js.node.stream.Readable.ReadableEvent;
 import js.node.net.Socket;
 import js.node.Buffer;
+import Protocol;
 
 class Connection {
 	var socket:Socket;
@@ -57,12 +58,12 @@ class Connection {
 		}
 	}
 
-	public dynamic function onEvent<T>(type:String, data:T) {}
+	public dynamic function onEvent<P>(type:NotificationMethod<P>, data:P) {}
 
 	function onMessage<T>(msg:Message) {
 		trace('GOT MESSAGE ${haxe.Json.stringify(msg)}');
 		if (msg.id == null) {
-			onEvent(msg.method, msg.params);
+			onEvent(new NotificationMethod(msg.method), msg.params);
 		} else {
 			var callback = callbacks.shift();
 			if (callback != null) {
@@ -71,7 +72,7 @@ class Connection {
 		}
 	}
 
-	public function sendCommand<T:{}>(name:String, ?params:{}, ?callback:Null<Message.Error>->Null<T>->Void) {
+	public function sendCommand<P,R>(name:RequestMethod<P,R>, params:P, ?callback:Null<Message.Error>->Null<R>->Void) {
 		var cmd = haxe.Json.stringify({
 			id: 0,
 			method: name,

@@ -3,7 +3,7 @@ import js.node.Net;
 import js.node.ChildProcess;
 import js.node.child_process.ChildProcess.ChildProcessEvent;
 import js.node.net.Socket.SocketEvent;
-import Message;
+import Protocol;
 
 typedef EvalLaunchRequestArguments = {
 	>protocol.debug.Types.LaunchRequestArguments,
@@ -84,15 +84,15 @@ class Main extends adapter.DebugSession {
 
 	var stopContext:StopContext;
 
-	function onEvent<T>(type:String, data:T) {
+	function onEvent<P>(type:NotificationMethod<P>, data:P) {
 		switch (type) {
-			case "breakpointStop":
+			case Protocol.BreakpointStop:
 				stopContext = new StopContext(connection);
 				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
-			case "exceptionStop":
+			case Protocol.ExceptionStop:
 				stopContext = new StopContext(connection);
 				var evt = new adapter.DebugSession.StoppedEvent("exception", 0);
-				evt.body.text = (cast data).text;
+				evt.body.text = data.text;
 				sendEvent(evt);
 		}
 	}
@@ -120,26 +120,26 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
-		connection.sendCommand("stepIn");
+		connection.sendCommand(Protocol.StepIn, {});
 		sendResponse(response);
 		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
-		connection.sendCommand("stepOut");
+		connection.sendCommand(Protocol.StepOut, {});
 		sendResponse(response);
 		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
-		connection.sendCommand("next");
+		connection.sendCommand(Protocol.Next, {});
 		sendResponse(response);
 		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
-		connection.sendCommand("stackTrace", function(error, result:Array<StackFrameInfo>) {
+		connection.sendCommand(Protocol.StackTrace, {}, function(error, result) {
 			var r:Array<StackFrame> = [];
 			for (info in result) {
 				if (info.artificial) {
@@ -176,7 +176,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand("continue");
+		connection.sendCommand(Protocol.Continue, {});
 		sendResponse(response);
 	}
 
@@ -197,7 +197,7 @@ class Main extends adapter.DebugSession {
 				var arg:{file:String, line:Int, ?column:Int} = {file: args.source.path, line: bp.line};
 				if (bp.column != null)
 					arg.column = bp.column - 1;
-				connection.sendCommand("setBreakpoint", arg, function(error, result:{id:Int}) {
+				connection.sendCommand(Protocol.SetBreakpoint, arg, function(error, result) {
 					if (error == null) {
 						verifiedIds.push(result.id);
 						cb({verified: true, id: result.id});
@@ -219,7 +219,7 @@ class Main extends adapter.DebugSession {
 			return;
 		} else {
 			function clearBreakpoint(id:Int, cb:Any->Void) {
-				connection.sendCommand("removeBreakpoint", {id: id}, (_,_) -> cb(null));
+				connection.sendCommand(Protocol.RemoveBreakpoint, {id: id}, (_,_) -> cb(null));
 			}
 			asyncMap(currentVerifiedIds, clearBreakpoint, function(_) {
 				breakpoints.remove(args.source.path);
@@ -246,15 +246,4 @@ class Main extends adapter.DebugSession {
 	static function main() {
 		adapter.DebugSession.run(Main);
 	}
-}
-
-typedef StackFrameInfo = {
-	var id:Int;
-	var name:String;
-	var source:String;
-	var line:Int;
-	var column:Int;
-	var endLine:Int;
-	var endColumn:Int;
-	var artificial:Bool;
 }

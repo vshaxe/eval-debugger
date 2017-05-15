@@ -1,7 +1,7 @@
 import protocol.debug.Types;
+import Protocol;
 
 typedef ReferenceId = Int;
-typedef AccessExpr = String;
 
 enum VariablesReference {
 	Scope(frameId:Int, scopeNumber:Int);
@@ -27,7 +27,7 @@ class StopContext {
 
 	function maybeSwitchFrame(frameId:Int, callback:Void->Void) {
 		if (currentFrameId != frameId) {
-			connection.sendCommand("switchFrame", {id: frameId}, function(_,_) {
+			connection.sendCommand(Protocol.SwitchFrame, {id: frameId}, function(_,_) {
 				currentFrameId = frameId;
 				callback();
 			});
@@ -37,7 +37,7 @@ class StopContext {
 	}
 
 	function doGetScopes(callback:Array<Scope>->Void) {
-		connection.sendCommand("getScopes", function(error, result:Array<ScopeInfo>) {
+		connection.sendCommand(Protocol.GetScopes, {}, function(error, result) {
 			var scopes:Array<Scope> = [];
 			for (scopeInfo in result) {
 				var reference = getNextId();
@@ -87,13 +87,13 @@ class StopContext {
 	}
 
 	function setVar(access:String, value:String, callback:Null<VarInfo>->Void) {
-		connection.sendCommand("setVariable", {expr: access, value: value}, function(error, result:VarInfo) {
+		connection.sendCommand(Protocol.SetVariable, {expr: access, value: value}, function(error, result) {
 			callback(result);
 		});
 	}
 
 	function getScopeVars(frameId:Int, scopeId:Int, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand("getScopeVariables", {id: scopeId}, function(error, result:Array<VarInfo>) {
+		connection.sendCommand(Protocol.GetScopeVariables, {id: scopeId}, function(error, result) {
 			var r = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
@@ -106,7 +106,7 @@ class StopContext {
 	}
 
 	function getChildVars(frameId:Int, expr:String, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand("getStructure", {expr: expr}, function(error, result:Array<VarInfo>) {
+		connection.sendCommand(Protocol.GetStructure, {expr: expr}, function(error, result) {
 			var r = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
@@ -127,30 +127,4 @@ class StopContext {
 		}
 		return v;
 	}
-}
-
-/** Info about a scope variable or its subvariable (a field, array element or something) as returned by Haxe eval debugger **/
-typedef VarInfo = {
-	/** Variable/field name, for array elements or enum ctor arguments looks like `[0]` **/
-	var name:String;
-	/** Value type **/
-	var type:String;
-	/** Current value to display (structured child values are rendered with `...`) **/
-	var value:String;
-	/** True if this variable is structured, meaning that we can request "subvariables" (fields/elements) **/
-	var structured:Bool;
-	/** Access expression used to reference this variable.
-	    For scope-level vars it's the same as name, for child vars it's an expression like `a.b[0].c[1]`.
-	**/
-	var access:AccessExpr;
-}
-
-/** Info about a scope **/
-typedef ScopeInfo = {
-	/** Scope identifier to use for the `vars` request. **/
-	var id:Int;
-	/** Name of the scope (e.g. Locals, Captures, etc) **/
-	var name:String;
-	/** Position information about scope boundaries, if present **/
-	@:optional var pos:{source:String, line:Int, column:Int, endLine:Int, endColumn:Int};
 }
