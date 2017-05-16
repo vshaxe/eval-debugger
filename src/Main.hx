@@ -1,8 +1,10 @@
 import protocol.debug.Types;
+import js.node.Buffer;
 import js.node.Net;
 import js.node.ChildProcess;
 import js.node.child_process.ChildProcess.ChildProcessEvent;
 import js.node.net.Socket.SocketEvent;
+import js.node.stream.Readable.ReadableEvent;
 import Protocol;
 
 typedef EvalLaunchRequestArguments = {
@@ -83,9 +85,19 @@ class Main extends adapter.DebugSession {
 				hxmlFile,
 				"-D", 'eval-debugger=127.0.0.1:$port',
 			];
-			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Inherit});
+			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Pipe});
+			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
+			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
 			haxeProcess.on(ChildProcessEvent.Exit, onExit);
 		});
+	}
+
+	function onStdout(data:Buffer) {
+		sendEvent(new adapter.DebugSession.OutputEvent(data.toString("utf-8"), stdout));
+	}
+
+	function onStderr(data:Buffer) {
+		sendEvent(new adapter.DebugSession.OutputEvent(data.toString("utf-8"), stderr));
 	}
 
 	var stopContext:StopContext;
