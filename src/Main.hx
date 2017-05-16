@@ -34,11 +34,9 @@ class Main extends adapter.DebugSession {
 		response.body.supportsSetVariable = true;
 		sendResponse(response);
 		postLaunchActions = [];
-		breakpoints = new Map();
 	}
 
 	var connection:Connection;
-	var breakpoints:Map<String,Array<Int>>;
 	var postLaunchActions:Array<Void->Void>;
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
