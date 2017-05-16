@@ -190,59 +190,18 @@ class Main extends adapter.DebugSession {
 	}
 
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
-		function sendBreakpoints() {
-			if (args.breakpoints.length == 0)
-				return sendResponse(response);
-
-			var verifiedIds = new Array<Int>();
-			function sendBreakpoint(bp:SourceBreakpoint, cb:Breakpoint->Void) {
-				var arg:{file:String, line:Int, ?column:Int} = {file: args.source.path, line: bp.line};
-				if (bp.column != null)
-					arg.column = bp.column - 1;
-				connection.sendCommand(Protocol.SetBreakpoint, arg, function(error, result) {
-					if (error == null) {
-						verifiedIds.push(result.id);
-						cb({verified: true, id: result.id});
-					} else {
-						cb({verified: false, message: error.message});
-					}
-				});
-			}
-			asyncMap(args.breakpoints, sendBreakpoint, function(result) {
-				breakpoints.set(args.source.path, verifiedIds);
-				response.body = {breakpoints: result};
-				sendResponse(response);
-			});
+		var params:SetBreakpointsParams = {
+			file: args.source.path,
+			breakpoints: [for (sbp in args.breakpoints) {
+				var bp:{line:Int, ?column:Int} = {line: sbp.line};
+				if (sbp.column != null) bp.column = sbp.column - 1;
+				bp;
+			}]
 		}
-
-		var currentVerifiedIds = breakpoints[args.source.path];
-		if (currentVerifiedIds == null) {
-			sendBreakpoints();
-			return;
-		} else {
-			function clearBreakpoint(id:Int, cb:Any->Void) {
-				connection.sendCommand(Protocol.RemoveBreakpoint, {id: id}, (_,_) -> cb(null));
-			}
-			asyncMap(currentVerifiedIds, clearBreakpoint, function(_) {
-				breakpoints.remove(args.source.path);
-				sendBreakpoints();
-			});
-		}
-
-	}
-
-	static function asyncMap<T,T2>(args:Array<T>, fn:T->(T2->Void)->Void, cb:Array<T2>->Void) {
-		var result = [];
-		function loop() {
-			if (args.length == 0)
-				return cb(result);
-			var arg = args.shift();
-			fn(arg, function(v) {
-				result.push(v);
-				loop();
-			});
-		}
-		loop();
+		connection.sendCommand(Protocol.SetBreakpoints, params, function(error, result) {
+			response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
+			sendResponse(response);
+		});
 	}
 
 	static function main() {
