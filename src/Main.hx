@@ -120,22 +120,25 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
-		connection.sendCommand(Protocol.StepIn, {});
-		sendResponse(response);
-		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		connection.sendCommand(Protocol.StepIn, {}, function(_,_) {
+			sendResponse(response);
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
-		connection.sendCommand(Protocol.StepOut, {});
-		sendResponse(response);
-		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		connection.sendCommand(Protocol.StepOut, {}, function(_,_) {
+			sendResponse(response);
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		});
 	}
 
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
-		connection.sendCommand(Protocol.Next, {});
-		sendResponse(response);
-		sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		connection.sendCommand(Protocol.Next, {}, function(_,_) {
+			sendResponse(response);
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		});
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
@@ -176,8 +179,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand(Protocol.Continue, {});
-		sendResponse(response);
+		connection.sendCommand(Protocol.Continue, {}, (_,_) -> sendResponse(response));
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {

@@ -3,12 +3,14 @@ import js.node.net.Socket;
 import js.node.Buffer;
 import Protocol;
 
+typedef RequestCallback<T> = Null<Message.Error>->Null<T>->Void;
+
 class Connection {
 	var socket:Socket;
 	var buffer:Buffer;
 	var index:Int;
 	var nextMessageLength:Int;
-	var callbacks:Array<Null<Message.Error>->Null<Dynamic>->Void>;
+	var callbacks:Map<Int,RequestCallback<Dynamic>>;
 
 	static inline var DEFAULT_BUFFER_SIZE = 4096;
 
@@ -17,7 +19,7 @@ class Connection {
 		buffer = new Buffer(DEFAULT_BUFFER_SIZE);
 		index = 0;
 		nextMessageLength = -1;
-		callbacks = [];
+		callbacks = new Map();
 		socket.on(ReadableEvent.Data, onData);
 	}
 
@@ -65,16 +67,20 @@ class Connection {
 		if (msg.id == null) {
 			onEvent(new NotificationMethod(msg.method), msg.params);
 		} else {
-			var callback = callbacks.shift();
+			var callback = callbacks[msg.id];
 			if (callback != null) {
+				callbacks.remove(msg.id);
 				callback(msg.error, msg.result);
 			}
 		}
 	}
 
-	public function sendCommand<P,R>(name:RequestMethod<P,R>, params:P, ?callback:Null<Message.Error>->Null<R>->Void) {
+	var nextRequestId = 1;
+
+	public function sendCommand<P,R>(name:RequestMethod<P,R>, params:P, ?callback:RequestCallback<R>) {
+		var requestId = nextRequestId++;
 		var cmd = haxe.Json.stringify({
-			id: 0,
+			id: requestId,
 			method: name,
 			params: params
 		});
@@ -85,6 +91,6 @@ class Connection {
 		socket.write(header);
 		socket.write(body);
 		if (callback != null)
-			callbacks.push(callback);
+			callbacks[requestId] = callback;
 	}
 }
