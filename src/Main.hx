@@ -37,7 +37,17 @@ class Main extends adapter.DebugSession {
 	}
 
 	var connection:Connection;
-	var postLaunchActions:Array<Void->Void>;
+	var postLaunchActions:Array<(Void->Void)->Void>;
+
+	function executePostLaunchActions(callback) {
+		function loop() {
+			var action = postLaunchActions.shift();
+			if (action == null)
+				return callback();
+			action(loop);
+		}
+		loop();
+	}
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var args:EvalLaunchRequestArguments = cast args;
@@ -51,16 +61,14 @@ class Main extends adapter.DebugSession {
 
 			socket.on(SocketEvent.Error, error -> trace('Socket error: $error'));
 
-			for (action in postLaunchActions)
-				action();
-			postLaunchActions = [];
-
-			if (args.stopOnEntry) {
-				sendResponse(response);
-				sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
-			} else {
-				continueRequest(cast response, null);
-			}
+			executePostLaunchActions(function() {
+				if (args.stopOnEntry) {
+					sendResponse(response);
+					sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
+				} else {
+					continueRequest(cast response, null);
+				}
+			});
 		}
 
 		function onExit(_, _) {
@@ -182,12 +190,12 @@ class Main extends adapter.DebugSession {
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
 		if (connection == null)
-			postLaunchActions.push(doSetBreakpoints.bind(response, args));
+			postLaunchActions.push(cb -> doSetBreakpoints(response, args, cb));
 		else
-			doSetBreakpoints(response, args);
+			doSetBreakpoints(response, args, null);
 	}
 
-	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
+	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments, callback:Null<Void->Void>) {
 		var params:SetBreakpointsParams = {
 			file: args.source.path,
 			breakpoints: [for (sbp in args.breakpoints) {
@@ -199,6 +207,8 @@ class Main extends adapter.DebugSession {
 		connection.sendCommand(Protocol.SetBreakpoints, params, function(error, result) {
 			response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
 			sendResponse(response);
+			if (callback != null)
+				callback();
 		});
 	}
 
