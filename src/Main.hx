@@ -25,11 +25,6 @@ class Main extends adapter.DebugSession {
 		sendEvent(new adapter.DebugSession.OutputEvent(msg));
 	}
 
-	function new() {
-		super();
-		setDebuggerColumnsStartAt1(false);
-	}
-
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
 		sendEvent(new adapter.DebugSession.InitializedEvent());
@@ -212,7 +207,7 @@ class Main extends adapter.DebugSession {
 			file: args.source.path,
 			breakpoints: [for (sbp in args.breakpoints) {
 				var bp:{line:Int, ?column:Int} = {line: sbp.line};
-				if (sbp.column != null) bp.column = sbp.column - 1;
+				if (sbp.column != null) bp.column = sbp.column;
 				bp;
 			}]
 		}
