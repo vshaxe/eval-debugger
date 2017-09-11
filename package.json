@@ -2,7 +2,7 @@
 	"name": "vshaxe-eval-debug",
 	"displayName": "Haxe macro debugger",
 	"version": "0.0.1",
-	"publisher": "vsghaxe",
+	"publisher": "vshaxe",
 	"description": "Debug adapter for Haxe macro interpreter",
 	"engines": {
 		"vscode": "^1.1.0",

@@ -79,7 +79,6 @@ class StopContext {
 		if (access == null) return callback(null);
 		switch (ref) {
 			case Scope(frameId, _):
-				callback(null);
 				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
 			case Var(frameId, _):
 				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
