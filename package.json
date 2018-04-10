@@ -12,8 +12,8 @@
 		"Debuggers"
 	],
 	"dependencies": {
-		"vscode-debugprotocol": "^1.19.0",
-		"vscode-debugadapter": "^1.19.0"
+		"vscode-debugprotocol": "1.19.0",
+		"vscode-debugadapter": "1.19.0"
 	},
 	"scripts": {
 		"prepublish": "haxe build.hxml"
