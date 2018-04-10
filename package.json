@@ -8,9 +8,9 @@
 		"vscode": "^1.1.0",
 		"node": "^6.5.0"
 	},
-    "categories": [
-        "Debuggers"
-    ],
+	"categories": [
+		"Debuggers"
+	],
 	"dependencies": {
 		"vscode-debugprotocol": "^1.19.0",
 		"vscode-debugadapter": "^1.19.0"
