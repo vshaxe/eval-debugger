@@ -20,7 +20,9 @@
 	},
 	"contributes": {
 		"breakpoints": [
-			{"language": "haxe"}
+			{
+				"language": "haxe"
+			}
 		],
 		"debuggers": [
 			{
@@ -30,7 +32,10 @@
 				"runtime": "node",
 				"configurationAttributes": {
 					"launch": {
-						"required": [ "hxml", "cwd" ],
+						"required": [
+							"hxml",
+							"cwd"
+						],
 						"properties": {
 							"cwd": {
 								"type": "string",
