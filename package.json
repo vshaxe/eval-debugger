@@ -27,7 +27,7 @@
 		"debuggers": [
 			{
 				"type": "haxe-eval",
-				"label": "Haxe macro debug",
+				"label": "Haxe Macro",
 				"program": "./bin/evalDebug.js",
 				"runtime": "node",
 				"configurationAttributes": {
