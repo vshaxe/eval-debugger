@@ -206,8 +206,9 @@ class Main extends adapter.DebugSession {
 		var params:SetBreakpointsParams = {
 			file: args.source.path,
 			breakpoints: [for (sbp in args.breakpoints) {
-				var bp:{line:Int, ?column:Int} = {line: sbp.line};
+				var bp:{line:Int, ?column:Int, ?condition:String} = {line: sbp.line};
 				if (sbp.column != null) bp.column = sbp.column;
+				if (sbp.condition != null) bp.condition = sbp.condition;
 				bp;
 			}]
 		}
