@@ -237,6 +237,12 @@ class Main extends adapter.DebugSession {
 		});
 	}
 
+	override function setExceptionBreakPointsRequest(response:SetExceptionBreakpointsResponse, args:SetExceptionBreakpointsArguments) {
+		// TODO: this should finish before the debugger runs, else the settings are missed
+		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {
+		});
+	}
+
 	static function main() {
 		adapter.DebugSession.run(Main);
 	}
