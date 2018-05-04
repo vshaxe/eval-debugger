@@ -220,6 +220,23 @@ class Main extends adapter.DebugSession {
 		});
 	}
 
+	override function evaluateRequest(response:EvaluateResponse, args:EvaluateArguments) {
+		connection.sendCommand(Protocol.Evaluate, {expr:args.expression}, function(error, result) {
+			if (error != null) {
+				response.message = error.message;
+				response.success = false;
+			} else {
+				response.success = true;
+				response.body = {
+					result: result.value,
+					type: result.type,
+					variablesReference: 0
+				}
+			}
+			sendResponse(response);
+		});
+	}
+
 	static function main() {
 		adapter.DebugSession.run(Main);
 	}
