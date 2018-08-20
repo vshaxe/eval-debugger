@@ -10,8 +10,8 @@ enum VariablesReference {
 
 class StopContext {
 	var connection:Connection;
-	var references = new Map<ReferenceId,VariablesReference>();
-	var fields = new Map<ReferenceId,Map<String,AccessExpr>>();
+	var references = new Map<ReferenceId, VariablesReference>();
+	var fields = new Map<ReferenceId, Map<String, AccessExpr>>();
 	var nextId = 1;
 	var currentFrameId = 0; // current is always the top one at the start
 
@@ -19,7 +19,8 @@ class StopContext {
 		this.connection = connection;
 	}
 
-	inline function getNextId():ReferenceId return nextId++;
+	inline function getNextId():ReferenceId
+		return nextId++;
 
 	public function getScopes(frameId:Int, callback:Array<Scope>->Void) {
 		maybeSwitchFrame(frameId, doGetScopes.bind(callback));
@@ -27,7 +28,7 @@ class StopContext {
 
 	function maybeSwitchFrame(frameId:Int, callback:Void->Void) {
 		if (currentFrameId != frameId) {
-			connection.sendCommand(Protocol.SwitchFrame, {id: frameId}, function(_,_) {
+			connection.sendCommand(Protocol.SwitchFrame, {id: frameId}, function(_, _) {
 				currentFrameId = frameId;
 				callback();
 			});
@@ -72,11 +73,14 @@ class StopContext {
 
 	public function setVariable(reference:ReferenceId, name:String, value:String, callback:Null<VarInfo>->Void) {
 		var ref = references[reference];
-		if (ref == null) return callback(null);
+		if (ref == null)
+			return callback(null);
 		var fields = fields[reference];
-		if (fields == null) return callback(null);
+		if (fields == null)
+			return callback(null);
 		var access = fields[name];
-		if (access == null) return callback(null);
+		if (access == null)
+			return callback(null);
 		switch (ref) {
 			case Scope(frameId, _):
 				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
@@ -118,7 +122,12 @@ class StopContext {
 	}
 
 	function varInfoToVariable(frameId:Int, varInfo:VarInfo):Variable {
-		var v:Variable = {name: varInfo.name, value: varInfo.value, type: varInfo.type, variablesReference: 0};
+		var v:Variable = {
+			name: varInfo.name,
+			value: varInfo.value,
+			type: varInfo.type,
+			variablesReference: 0
+		};
 		if (varInfo.structured) {
 			var reference = getNextId();
 			references[reference] = Var(frameId, varInfo.access);

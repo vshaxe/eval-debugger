@@ -10,7 +10,7 @@ class Connection {
 	var buffer:Buffer;
 	var index:Int;
 	var nextMessageLength:Int;
-	var callbacks:Map<Int,RequestCallback<Dynamic>>;
+	var callbacks:Map<Int, RequestCallback<Dynamic>>;
 
 	static inline var DEFAULT_BUFFER_SIZE = 4096;
 
@@ -77,7 +77,7 @@ class Connection {
 
 	var nextRequestId = 1;
 
-	public function sendCommand<P,R>(name:RequestMethod<P,R>, params:P, ?callback:RequestCallback<R>) {
+	public function sendCommand<P, R>(name:RequestMethod<P, R>, params:P, ?callback:RequestCallback<R>) {
 		var requestId = nextRequestId++;
 		var cmd = haxe.Json.stringify({
 			id: requestId,

@@ -8,7 +8,7 @@ import js.node.stream.Readable.ReadableEvent;
 import Protocol;
 
 typedef EvalLaunchRequestArguments = {
-	>protocol.debug.Types.LaunchRequestArguments,
+	> protocol.debug.Types.LaunchRequestArguments,
 	var cwd:String;
 	var hxml:String;
 	var stopOnEntry:Bool;
@@ -34,7 +34,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	var connection:Connection;
-	var postLaunchActions:Array<(Void->Void)->Void>;
+	var postLaunchActions:Array<(Void -> Void)->Void>;
 
 	function executePostLaunchActions(callback) {
 		function loop() {
@@ -75,11 +75,7 @@ class Main extends adapter.DebugSession {
 		var server = Net.createServer(onConnected);
 		server.listen(0, function() {
 			var port = server.address().port;
-			var args = [
-				"--cwd", cwd,
-				hxmlFile,
-				"-D", 'eval-debugger=127.0.0.1:$port',
-			];
+			var args = ["--cwd", cwd, hxmlFile, "-D", 'eval-debugger=127.0.0.1:$port',];
 			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Pipe});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
@@ -133,22 +129,21 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
-		connection.sendCommand(Protocol.StepIn, {}, function(_,_) {
+		connection.sendCommand(Protocol.StepIn, {}, function(_, _) {
 			sendResponse(response);
 			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
-		connection.sendCommand(Protocol.StepOut, {}, function(_,_) {
+		connection.sendCommand(Protocol.StepOut, {}, function(_, _) {
 			sendResponse(response);
 			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 		});
 	}
 
-
 	override function nextRequest(response:NextResponse, args:NextArguments) {
-		connection.sendCommand(Protocol.Next, {}, function(_,_) {
+		connection.sendCommand(Protocol.Next, {}, function(_, _) {
 			sendResponse(response);
 			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 		});
@@ -192,7 +187,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand(Protocol.Continue, {}, (_,_) -> sendResponse(response));
+		connection.sendCommand(Protocol.Continue, {}, (_, _) -> sendResponse(response));
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
@@ -205,12 +200,16 @@ class Main extends adapter.DebugSession {
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments, callback:Null<Void->Void>) {
 		var params:SetBreakpointsParams = {
 			file: args.source.path,
-			breakpoints: [for (sbp in args.breakpoints) {
-				var bp:{line:Int, ?column:Int, ?condition:String} = {line: sbp.line};
-				if (sbp.column != null) bp.column = sbp.column;
-				if (sbp.condition != null) bp.condition = sbp.condition;
-				bp;
-			}]
+			breakpoints: [
+				for (sbp in args.breakpoints) {
+					var bp:{line:Int, ?column:Int, ?condition:String} = {line: sbp.line};
+					if (sbp.column != null)
+						bp.column = sbp.column;
+					if (sbp.condition != null)
+						bp.condition = sbp.condition;
+					bp;
+				}
+			]
 		}
 		connection.sendCommand(Protocol.SetBreakpoints, params, function(error, result) {
 			response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
@@ -221,7 +220,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function evaluateRequest(response:EvaluateResponse, args:EvaluateArguments) {
-		connection.sendCommand(Protocol.Evaluate, {expr:args.expression}, function(error, result) {
+		connection.sendCommand(Protocol.Evaluate, {expr: args.expression}, function(error, result) {
 			if (error != null) {
 				response.message = error.message;
 				response.success = false;
@@ -239,8 +238,7 @@ class Main extends adapter.DebugSession {
 
 	override function setExceptionBreakPointsRequest(response:SetExceptionBreakpointsResponse, args:SetExceptionBreakpointsArguments) {
 		// TODO: this should finish before the debugger runs, else the settings are missed
-		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {
-		});
+		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {});
 	}
 
 	static function main() {
