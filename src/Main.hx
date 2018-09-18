@@ -29,6 +29,7 @@ class Main extends adapter.DebugSession {
 		// haxe.Log.trace = traceToOutput;
 		sendEvent(new adapter.DebugSession.InitializedEvent());
 		response.body.supportsSetVariable = true;
+		response.body.supportsEvaluateForHovers = true;
 		sendResponse(response);
 		postLaunchActions = [];
 	}
@@ -110,6 +111,10 @@ class Main extends adapter.DebugSession {
 		stopContext.getScopes(args.frameId, function(scopes) {
 			response.body = {scopes: scopes};
 			sendResponse(response);
+			// get all variables so hovering works
+			for (scope in scopes) {
+				stopContext.getVariables(scope.variablesReference, _ -> {});
+			}
 		});
 	}
 
@@ -220,16 +225,32 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function evaluateRequest(response:EvaluateResponse, args:EvaluateArguments) {
+		// I don't want to have to commit this...
+		// if (args.context == "hover") {
+		// 	switch (args.expression.charCodeAt(0)) {
+		// 		case '"'.code if (!~/[^\\]"/.matchSub(args.expression, 1)):
+		// 			args.expression += '"';
+		// 		case "'".code if (!~/[^\\]'/.matchSub(args.expression, 1)):
+		// 			args.expression += "'";
+		// 		case _:
+		// 	}
+		// }
 		connection.sendCommand(Protocol.Evaluate, {expr: args.expression}, function(error, result) {
 			if (error != null) {
 				response.message = error.message;
 				response.success = false;
 			} else {
 				response.success = true;
+				var ref = if (!result.structured) {
+					0;
+				} else {
+					var v = stopContext.findVar(args.expression);
+					v == null ? 0 : v.variablesReference;
+				}
 				response.body = {
 					result: result.value,
 					type: result.type,
-					variablesReference: 0
+					variablesReference: ref
 				}
 			}
 			sendResponse(response);

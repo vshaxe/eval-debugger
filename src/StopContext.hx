@@ -12,6 +12,7 @@ class StopContext {
 	var connection:Connection;
 	var references = new Map<ReferenceId, VariablesReference>();
 	var fields = new Map<ReferenceId, Map<String, AccessExpr>>();
+	var variableLut = new Map<String, Variable>();
 	var nextId = 1;
 	var currentFrameId = 0; // current is always the top one at the start
 
@@ -133,6 +134,11 @@ class StopContext {
 			references[reference] = Var(frameId, varInfo.access);
 			v.variablesReference = reference;
 		}
+		variableLut[v.name] = v;
 		return v;
+	}
+
+	public function findVar(name:String) {
+		return variableLut[name];
 	}
 }
