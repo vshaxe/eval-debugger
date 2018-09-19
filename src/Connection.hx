@@ -43,11 +43,11 @@ class Connection {
 		append(data);
 		while (true) {
 			if (nextMessageLength == -1) {
-				if (index < 2)
+				if (index < 4)
 					return; // not enough data
-				nextMessageLength = buffer.readUInt16LE(0);
-				index -= 2;
-				buffer.copy(buffer, 0, 2);
+				nextMessageLength = buffer.readInt32LE(0);
+				index -= 4;
+				buffer.copy(buffer, 0, 4);
 			}
 			if (index < nextMessageLength)
 				return;
