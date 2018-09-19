@@ -145,54 +145,58 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
-		connection.sendCommand(Protocol.StepIn, {}, function(_, _) {
-			sendResponse(response);
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		connection.sendCommand(Protocol.StepIn, {}, function(error, _) {
+			respond(response, error, function() {
+				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+			});
 		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
-		connection.sendCommand(Protocol.StepOut, {}, function(_, _) {
-			sendResponse(response);
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		connection.sendCommand(Protocol.StepOut, {}, function(error, _) {
+			respond(response, error, function() {
+				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+			});
 		});
 	}
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
-		connection.sendCommand(Protocol.Next, {}, function(_, _) {
-			sendResponse(response);
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		connection.sendCommand(Protocol.Next, {}, function(error, _) {
+			respond(response, error, function() {
+				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+			});
 		});
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
 		connection.sendCommand(Protocol.StackTrace, {}, function(error, result) {
-			var r:Array<StackFrame> = [];
-			for (info in result) {
-				if (info.artificial) {
-					r.push({
-						id: info.id,
-						name: "Internal",
-						line: 0,
-						column: 0,
-						presentationHint: label,
-					});
-				} else {
-					r.push({
-						id: info.id,
-						name: info.name,
-						source: {path: info.source},
-						line: info.line,
-						column: info.column,
-						endLine: info.endLine,
-						endColumn: info.endColumn,
-					});
+			respond(response, error, function() {
+				var r:Array<StackFrame> = [];
+				for (info in result) {
+					if (info.artificial) {
+						r.push({
+							id: info.id,
+							name: "Internal",
+							line: 0,
+							column: 0,
+							presentationHint: label,
+						});
+					} else {
+						r.push({
+							id: info.id,
+							name: info.name,
+							source: {path: info.source},
+							line: info.line,
+							column: info.column,
+							endLine: info.endLine,
+							endColumn: info.endColumn,
+						});
+					}
 				}
-			}
-			response.body = {
-				stackFrames: r
-			};
-			sendResponse(response);
+				response.body = {
+					stackFrames: r
+				};
+			});
 		});
 	}
 
@@ -203,7 +207,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand(Protocol.Continue, {}, (_, _) -> sendResponse(response));
+		connection.sendCommand(Protocol.Continue, {}, (error, _) -> respond(response, error, () -> {}));
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
@@ -216,8 +220,10 @@ class Main extends adapter.DebugSession {
 	override function setFunctionBreakPointsRequest(response:SetFunctionBreakpointsResponse, args:SetFunctionBreakpointsArguments) {
 		function doSetFunctionBreakpoints(callback) {
 			connection.sendCommand(Protocol.SetFunctionBreakpoints, args.breakpoints, function(error, result) {
-				response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
-				sendResponse(response);
+				respond(response, error, function() {
+					response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
+					response.success = true;
+				});
 				if (callback != null)
 					callback();
 			});
@@ -243,8 +249,10 @@ class Main extends adapter.DebugSession {
 			]
 		}
 		connection.sendCommand(Protocol.SetBreakpoints, params, function(error, result) {
-			response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
-			sendResponse(response);
+			respond(response, error, function() {
+				response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
+				sendResponse(response);
+			});
 			if (callback != null)
 				callback();
 		});
@@ -262,10 +270,7 @@ class Main extends adapter.DebugSession {
 		// 	}
 		// }
 		stopContext.evaluate(args, function(error, result) {
-			if (error != null) {
-				response.message = error.message;
-				response.success = false;
-			} else {
+			respond(response, error, function() {
 				response.success = true;
 				var ref = if (!result.structured) {
 					0;
@@ -278,8 +283,7 @@ class Main extends adapter.DebugSession {
 					type: result.type,
 					variablesReference: ref
 				}
-			}
-			sendResponse(response);
+			});
 		});
 	}
 
@@ -291,6 +295,17 @@ class Main extends adapter.DebugSession {
 	override function configurationDoneRequest(response:ConfigurationDoneResponse, args:ConfigurationDoneArguments) {
 		if (!stopOnEntry) {
 			continueRequest(cast response, null);
+		}
+		sendResponse(response);
+	}
+
+	function respond<T>(response:Response<T>, error:Null<Message.Error>, f:Void->Void) {
+		if (error != null) {
+			response.success = false;
+			response.message = error.message;
+		} else {
+			response.success = true;
+			f();
 		}
 		sendResponse(response);
 	}
