@@ -37,6 +37,7 @@ class Main extends adapter.DebugSession {
 		];
 		response.body.supportsFunctionBreakpoints = true;
 		response.body.supportsConfigurationDoneRequest = true;
+		response.body.supportsCompletionsRequest = true;
 		sendResponse(response);
 		postLaunchActions = [];
 	}
@@ -297,6 +298,23 @@ class Main extends adapter.DebugSession {
 			continueRequest(cast response, null);
 		}
 		sendResponse(response);
+	}
+
+	override function completionsRequest(response:CompletionsResponse, args:CompletionsArguments) {
+		connection.sendCommand(Protocol.GetCompletion, args, function(error, result) {
+			respond(response, error, function() {
+				response.body = {
+					targets: [
+						for (item in result) {
+							var item2:protocol.debug.Types.CompletionItem = {label: item.label, type: item.type};
+							if (item.start != null)
+								item2.start = item.start;
+							item2;
+						}
+					]
+				}
+			});
+		});
 	}
 
 	function respond<T>(response:Response<T>, error:Null<Message.Error>, f:Void->Void) {

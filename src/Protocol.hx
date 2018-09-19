@@ -28,6 +28,18 @@ class Protocol {
 	static inline var ExceptionStop = new NotificationMethod<{text:String}>("exceptionStop");
 	static inline var Evaluate = new RequestMethod<{expr:String}, VarInfo>("evaluate");
 	static inline var SetExceptionOptions = new RequestMethod<Array<String>, Void>("setExceptionOptions");
+	static inline var GetCompletion = new RequestMethod<GetCompletionParams, Array<CompletionItem>>("getCompletion");
+}
+
+typedef GetCompletionParams = {
+	var text:String;
+	var column:Int;
+}
+
+typedef CompletionItem = {
+	var label:String;
+	var type:String;
+	@:optional var start:Int;
 }
 
 typedef SetBreakpointsParams = {
