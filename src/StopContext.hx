@@ -1,3 +1,4 @@
+import Connection.RequestCallback;
 import protocol.debug.Types;
 import Protocol;
 
@@ -152,6 +153,10 @@ class StopContext {
 			}
 			getVariables(scope.variablesReference, explore);
 		}
+	}
+
+	public function evaluate(args:EvaluateArguments, callback:RequestCallback<VarInfo>) {
+		maybeSwitchFrame(args.frameId, connection.sendCommand.bind(Protocol.Evaluate, {expr: args.expression}, callback));
 	}
 
 	public function findVar(name:String) {

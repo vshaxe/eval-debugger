@@ -232,7 +232,7 @@ class Main extends adapter.DebugSession {
 		// 		case _:
 		// 	}
 		// }
-		connection.sendCommand(Protocol.Evaluate, {expr: args.expression}, function(error, result) {
+		stopContext.evaluate(args, function(error, result) {
 			if (error != null) {
 				response.message = error.message;
 				response.success = false;
