@@ -134,8 +134,24 @@ class StopContext {
 			references[reference] = Var(frameId, varInfo.access);
 			v.variablesReference = reference;
 		}
-		variableLut[v.name] = v;
+		variableLut[varInfo.access] = v;
 		return v;
+	}
+
+	public function browseVariables(scopes:Array<Scope>) {
+		// get all variables so hovering works
+		var seen = new Map();
+		for (scope in scopes) {
+			function explore(vars:Array<Variable>) {
+				for (v in vars) {
+					if (!seen.exists(v.variablesReference)) {
+						seen[v.variablesReference] = true;
+						getVariables(v.variablesReference, explore);
+					}
+				}
+			}
+			getVariables(scope.variablesReference, explore);
+		}
 	}
 
 	public function findVar(name:String) {

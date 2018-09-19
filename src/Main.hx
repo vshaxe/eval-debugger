@@ -111,10 +111,7 @@ class Main extends adapter.DebugSession {
 		stopContext.getScopes(args.frameId, function(scopes) {
 			response.body = {scopes: scopes};
 			sendResponse(response);
-			// get all variables so hovering works
-			for (scope in scopes) {
-				stopContext.getVariables(scope.variablesReference, _ -> {});
-			}
+			stopContext.browseVariables(scopes);
 		});
 	}
 
