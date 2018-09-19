@@ -36,6 +36,7 @@ class Main extends adapter.DebugSession {
 			{filter: "uncaught", label: "Uncaught Exceptions"}
 		];
 		response.body.supportsFunctionBreakpoints = true;
+		response.body.supportsConfigurationDoneRequest = true;
 		sendResponse(response);
 		postLaunchActions = [];
 	}
@@ -43,7 +44,6 @@ class Main extends adapter.DebugSession {
 	var connection:Connection;
 	var postLaunchActions:Array<(Void -> Void)->Void>;
 	var stopOnEntry:Bool;
-	var initializing:Bool;
 
 	function executePostLaunchActions(callback) {
 		function loop() {
@@ -69,7 +69,6 @@ class Main extends adapter.DebugSession {
 			socket.on(SocketEvent.Error, error -> trace('Socket error: $error'));
 
 			function ready() {
-				initializing = true;
 				sendEvent(new adapter.DebugSession.InitializedEvent());
 			}
 
@@ -286,10 +285,14 @@ class Main extends adapter.DebugSession {
 
 	override function setExceptionBreakPointsRequest(response:SetExceptionBreakpointsResponse, args:SetExceptionBreakpointsArguments) {
 		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {});
-		if (initializing && !stopOnEntry) {
-			initializing = false;
+		sendResponse(response);
+	}
+
+	override function configurationDoneRequest(response:ConfigurationDoneResponse, args:ConfigurationDoneArguments) {
+		if (!stopOnEntry) {
 			continueRequest(cast response, null);
 		}
+		sendResponse(response);
 	}
 
 	static function main() {
