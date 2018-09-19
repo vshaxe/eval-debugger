@@ -27,7 +27,6 @@ class Main extends adapter.DebugSession {
 
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
-		sendEvent(new adapter.DebugSession.InitializedEvent());
 		response.body.supportsSetVariable = true;
 		response.body.supportsEvaluateForHovers = true;
 		sendResponse(response);
@@ -36,6 +35,7 @@ class Main extends adapter.DebugSession {
 
 	var connection:Connection;
 	var postLaunchActions:Array<(Void -> Void)->Void>;
+	var stopOnEntry:Bool;
 
 	function executePostLaunchActions(callback) {
 		function loop() {
@@ -49,6 +49,7 @@ class Main extends adapter.DebugSession {
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var args:EvalLaunchRequestArguments = cast args;
+		stopOnEntry = args.stopOnEntry;
 		var hxmlFile = args.hxml;
 		var cwd = args.cwd;
 
@@ -59,12 +60,17 @@ class Main extends adapter.DebugSession {
 
 			socket.on(SocketEvent.Error, error -> trace('Socket error: $error'));
 
+			function ready() {
+				sendEvent(new adapter.DebugSession.InitializedEvent());
+			}
+
 			executePostLaunchActions(function() {
 				if (args.stopOnEntry) {
+					ready();
 					sendResponse(response);
 					sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
 				} else {
-					continueRequest(cast response, null);
+					ready();
 				}
 			});
 		}
@@ -255,8 +261,10 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function setExceptionBreakPointsRequest(response:SetExceptionBreakpointsResponse, args:SetExceptionBreakpointsArguments) {
-		// TODO: this should finish before the debugger runs, else the settings are missed
 		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {});
+		if (!stopOnEntry) {
+			continueRequest(cast response, null);
+		}
 	}
 
 	static function main() {
