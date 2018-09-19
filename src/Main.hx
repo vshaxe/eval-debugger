@@ -29,6 +29,12 @@ class Main extends adapter.DebugSession {
 		// haxe.Log.trace = traceToOutput;
 		response.body.supportsSetVariable = true;
 		response.body.supportsEvaluateForHovers = true;
+		response.body.supportsConditionalBreakpoints = true;
+		response.body.supportsExceptionOptions = true;
+		response.body.exceptionBreakpointFilters = [
+			{filter: "all", label: "All Exceptions"},
+			{filter: "uncaught", label: "Uncaught Exceptions"}
+		];
 		sendResponse(response);
 		postLaunchActions = [];
 	}
