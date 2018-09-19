@@ -35,6 +35,7 @@ class Main extends adapter.DebugSession {
 			{filter: "all", label: "All Exceptions"},
 			{filter: "uncaught", label: "Uncaught Exceptions"}
 		];
+		response.body.supportsFunctionBreakpoints = true;
 		sendResponse(response);
 		postLaunchActions = [];
 	}
@@ -211,6 +212,21 @@ class Main extends adapter.DebugSession {
 			postLaunchActions.push(cb -> doSetBreakpoints(response, args, cb));
 		else
 			doSetBreakpoints(response, args, null);
+	}
+
+	override function setFunctionBreakPointsRequest(response:SetFunctionBreakpointsResponse, args:SetFunctionBreakpointsArguments) {
+		function doSetFunctionBreakpoints(callback) {
+			connection.sendCommand(Protocol.SetFunctionBreakpoints, args.breakpoints, function(error, result) {
+				response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
+				sendResponse(response);
+				if (callback != null)
+					callback();
+			});
+		}
+		if (connection == null)
+			postLaunchActions.push(cb -> doSetFunctionBreakpoints(cb))
+		else
+			doSetFunctionBreakpoints(null);
 	}
 
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments, callback:Null<Void->Void>) {

@@ -16,6 +16,7 @@ class Protocol {
 	static inline var StepOut = new RequestMethod<{}, Void>("stepOut");
 	static inline var StackTrace = new RequestMethod<{}, Array<StackFrameInfo>>("stackTrace");
 	static inline var SetBreakpoints = new RequestMethod<SetBreakpointsParams, Array<{id:Int}>>("setBreakpoints");
+	static inline var SetFunctionBreakpoints = new RequestMethod<SetFunctionBreakpointsParams, Array<{id:Int}>>("setFunctionBreakpoints");
 	static inline var SetBreakpoint = new RequestMethod<SetBreakpointParams, {id:Int}>("setBreakpoint");
 	static inline var RemoveBreakpoint = new RequestMethod<{id:Int}, Void>("removeBreakpoint");
 	static inline var SwitchFrame = new RequestMethod<{id:Int}, Void>("switchFrame");
@@ -33,6 +34,10 @@ typedef SetBreakpointsParams = {
 	var file:String;
 	var breakpoints:Array<{line:Int, ?column:Int}>;
 }
+
+typedef SetFunctionBreakpointsParams = Array<{
+	var name:String;
+}>
 
 typedef SetBreakpointParams = {
 	var file:String;
