@@ -91,7 +91,7 @@ class Main extends adapter.DebugSession {
 		var server = Net.createServer(onConnected);
 		server.listen(0, function() {
 			var port = server.address().port;
-			var args = ["--cwd", cwd, hxmlFile, "-D", 'eval-debugger=127.0.0.1:$port',];
+			var args = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port', hxmlFile];
 			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Pipe});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
