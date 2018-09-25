@@ -126,7 +126,7 @@ class Main extends adapter.DebugSession {
 		stopContext.getScopes(args.frameId, function(scopes) {
 			response.body = {scopes: scopes};
 			sendResponse(response);
-			stopContext.browseVariables(scopes);
+			// stopContext.browseVariables(scopes);
 		});
 	}
 
