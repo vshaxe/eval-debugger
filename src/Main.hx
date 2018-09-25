@@ -147,26 +147,23 @@ class Main extends adapter.DebugSession {
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
 		connection.sendCommand(Protocol.StepIn, {}, function(error, _) {
-			respond(response, error, function() {
+			respond(response, error, function() {});
 				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 			});
-		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
 		connection.sendCommand(Protocol.StepOut, {}, function(error, _) {
-			respond(response, error, function() {
+			respond(response, error, function() {});
 				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 			});
-		});
 	}
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
 		connection.sendCommand(Protocol.Next, {}, function(error, _) {
-			respond(response, error, function() {
+			respond(response, error, function() {});
 				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
 			});
-		});
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
