@@ -10,7 +10,7 @@ import Protocol;
 typedef EvalLaunchRequestArguments = {
 	> protocol.debug.Types.LaunchRequestArguments,
 	var cwd:String;
-	var hxml:String;
+	var args:Array<String>;
 	var stopOnEntry:Bool;
 }
 
@@ -43,7 +43,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	var connection:Connection;
-	var postLaunchActions:Array<(Void -> Void)->Void>;
+	var postLaunchActions:Array<(Void->Void)->Void>;
 	var stopOnEntry:Bool;
 
 	function executePostLaunchActions(callback) {
@@ -59,7 +59,7 @@ class Main extends adapter.DebugSession {
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var args:EvalLaunchRequestArguments = cast args;
 		stopOnEntry = args.stopOnEntry;
-		var hxmlFile = args.hxml;
+		var haxeArgs = args.args;
 		var cwd = args.cwd;
 
 		function onConnected(socket) {
@@ -91,7 +91,7 @@ class Main extends adapter.DebugSession {
 		var server = Net.createServer(onConnected);
 		server.listen(0, function() {
 			var port = server.address().port;
-			var args = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port', hxmlFile];
+			var args = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
 			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Pipe});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
@@ -148,22 +148,22 @@ class Main extends adapter.DebugSession {
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
 		connection.sendCommand(Protocol.StepIn, {}, function(error, _) {
 			respond(response, error, function() {});
-				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
-			});
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
 		connection.sendCommand(Protocol.StepOut, {}, function(error, _) {
 			respond(response, error, function() {});
-				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
-			});
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		});
 	}
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
 		connection.sendCommand(Protocol.Next, {}, function(error, _) {
 			respond(response, error, function() {});
-				sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
-			});
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+		});
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
