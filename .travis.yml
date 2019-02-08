@@ -7,4 +7,4 @@ install:
   - haxelib git vshaxe-build https://github.com/vshaxe/vshaxe-build
 
 script:
-  - haxelib run vshaxe-build -v -t eval-debugger
+  - haxelib run vshaxe-build -v -t eval-debugger -m both
