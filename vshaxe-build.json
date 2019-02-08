@@ -1,0 +1,30 @@
+{
+	"inherit": "vshaxe-node",
+	"haxelibs": [
+		{
+			"name": "vscode-debugadapter",
+			"installArgs": ["git", "vscode-debugadapter", "https://github.com/vshaxe/vscode-debugadapter-extern"]
+		}
+	],
+	"targets": [
+		{
+			"name": "eval-debugger",
+			"installCommands": [
+				["npm", "install"]
+			],
+			"args": {
+				"classPaths": [
+					"src"
+				],
+				"haxelibs": [
+					"vscode-debugadapter"
+				],
+				"output": {
+					"path": "bin/evalDebug.js",
+					"target": "js"
+				},
+				"main": "Main"
+			}
+		}
+	]
+}

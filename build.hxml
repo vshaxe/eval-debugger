@@ -1,8 +1,0 @@
--cp src
--main Main
--js bin/evalDebug.js
--dce full
--D analyzer-optimize
--lib hxnodejs
--lib vscode-debugadapter
-# -debug
