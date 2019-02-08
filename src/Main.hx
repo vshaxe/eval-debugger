@@ -66,12 +66,26 @@ class Main extends adapter.DebugSession {
 		sendEvent(new adapter.DebugSession.TerminatedEvent(false));
 	}
 
-	function getHaxeVersion(haxe:String, env:DynamicAccess<String>):Array<Int> {
+	function checkHaxeVersion(response:LaunchResponse, haxe:String, env:DynamicAccess<String>) {
+		function error(message:String) {
+			sendErrorResponse(cast response, 3000, message);
+			exit();
+			return false;
+		}
+
 		var versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env});
 		var output = (versionCheck.stderr : Buffer).toString().trim();
 		if (output == "")
 			output = (versionCheck.stdout : Buffer).toString().trim(); // haxe 4.0 prints -version output to stdout instead
-		return output.split(".").map(Std.parseInt);
+
+		if (versionCheck.status != 0)
+			return error("Haxe version check failed: " + output);
+
+		var majorVersion = Std.parseInt(output.split(".")[0]);
+		if (majorVersion < 4)
+			return error('eval-debugger requires Haxe 4 or newer, found $output');
+
+		return true;
 	}
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
@@ -83,10 +97,7 @@ class Main extends adapter.DebugSession {
 		var haxe = args.haxeExecutable.executable;
 		var env = args.haxeExecutable.env;
 
-		var haxeVersion = getHaxeVersion(haxe, env);
-		if (haxeVersion[0] < 4) {
-			sendErrorResponse(cast response, 3000, 'eval-debugger requires Haxe 4 or newer, found ${haxeVersion.join(".")}');
-			exit();
+		if (!checkHaxeVersion(response, haxe, env)) {
 			return;
 		}
 
