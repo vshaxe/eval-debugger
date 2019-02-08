@@ -95,7 +95,12 @@ class Main extends adapter.DebugSession {
 		var cwd = args.cwd;
 
 		var haxe = args.haxeExecutable.executable;
-		var env = args.haxeExecutable.env;
+
+		var env = new haxe.DynamicAccess();
+		for (key in js.Node.process.env.keys())
+			env[key] = js.Node.process.env[key];
+		for (key in args.haxeExecutable.env.keys())
+			env[key] = args.haxeExecutable.env[key];
 
 		if (!checkHaxeVersion(response, haxe, env)) {
 			return;
