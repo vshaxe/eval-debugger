@@ -8,6 +8,7 @@ import js.node.net.Socket.SocketEvent;
 import js.node.stream.Readable.ReadableEvent;
 import Protocol;
 
+using Lambda;
 using StringTools;
 
 typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments & {
@@ -23,7 +24,7 @@ typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments
 @:keep
 class Main extends adapter.DebugSession {
 	function traceToOutput(value:Dynamic, ?infos:haxe.PosInfos) {
-		var msg = value;
+		var msg = Std.string(value);
 		if (infos != null && infos.customParams != null) {
 			msg += " " + infos.customParams.join(" ");
 		}
@@ -162,19 +163,59 @@ class Main extends adapter.DebugSession {
 		}
 	}
 
+	var varReferenceMapping:Map<Int, Array<Int>>;
+
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
 		stopContext.getScopes(args.frameId, function(scopes) {
-			response.body = {scopes: scopes};
+			varReferenceMapping = [];
+			var mergedScopes = new Map<String, Scope>();
+			for (scope in scopes) {
+				var merged = mergedScopes[scope.name];
+				if (merged == null)
+					merged = scope;
+				else {
+					if (scope.line < merged.line)
+						merged.line = scope.line;
+					if (scope.column < merged.line)
+						merged.column = scope.line;
+					if (scope.endLine > merged.endLine)
+						merged.endLine = scope.endLine;
+					if (scope.endColumn > merged.endColumn)
+						merged.endColumn = scope.endColumn;
+				}
+				mergedScopes[merged.name] = merged;
+
+				var mergedRef = merged.variablesReference;
+				var mapping = varReferenceMapping[mergedRef];
+				if (mapping == null)
+					mapping = [];
+				mapping.push(scope.variablesReference);
+				varReferenceMapping[mergedRef] = mapping;
+			}
+			response.body = {scopes: mergedScopes.array()};
 			sendResponse(response);
 			// stopContext.browseVariables(scopes);
 		});
 	}
 
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
-		stopContext.getVariables(args.variablesReference, function(vars) {
-			response.body = {variables: vars};
-			sendResponse(response);
-		});
+		var scopes = [args.variablesReference];
+		if (varReferenceMapping.exists(args.variablesReference))
+			scopes = varReferenceMapping[args.variablesReference].copy();
+
+		var mergedVars = [];
+		function requestVars() {
+			stopContext.getVariables(scopes.pop(), vars -> {
+				mergedVars = mergedVars.concat(vars);
+				if (scopes.length > 0) {
+					requestVars();
+				} else {
+					response.body = {variables: mergedVars};
+					sendResponse(response);
+				}
+			});
+		}
+		requestVars();
 	}
 
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
