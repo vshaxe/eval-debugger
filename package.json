@@ -1,70 +1,12 @@
 {
-	"name": "vshaxe-eval-debug",
-	"displayName": "Haxe macro debugger",
+	"name": "haxe-eval-debugger",
 	"version": "0.0.1",
-	"publisher": "vshaxe",
 	"description": "Debug adapter for Haxe macro interpreter",
 	"engines": {
-		"vscode": "^1.1.0",
 		"node": "^6.5.0"
 	},
-	"categories": [
-		"Debuggers"
-	],
 	"dependencies": {
-		"vscode-debugprotocol": "1.19.0",
-		"vscode-debugadapter": "1.19.0"
-	},
-	"scripts": {
-		"prepublish": "haxe build.hxml"
-	},
-	"contributes": {
-		"breakpoints": [
-			{
-				"language": "haxe"
-			}
-		],
-		"debuggers": [
-			{
-				"type": "haxe-eval",
-				"label": "Haxe Macro",
-				"program": "./bin/evalDebug.js",
-				"runtime": "node",
-				"configurationAttributes": {
-					"launch": {
-						"required": [
-							"hxml",
-							"cwd"
-						],
-						"properties": {
-							"cwd": {
-								"type": "string",
-								"description": "Path to the current working directory",
-								"default": "${workspaceRoot}"
-							},
-							"hxml": {
-								"type": "string",
-								"description": "Path to the hxml file (can be relative to the cwd)",
-								"default": "${workspaceRoot}/build.hxml"
-							},
-							"stopOnEntry": {
-								"type": "boolean",
-								"description": "Automatically stop after launch.",
-								"default": true
-							}
-						}
-					}
-				},
-				"initialConfigurations": [
-					{
-						"name": "Haxe-eval",
-						"type": "haxe-eval",
-						"request": "launch",
-						"cwd": "${workspaceRoot}",
-						"hxml": "${workspaceRoot}/build.hxml"
-					}
-				]
-			}
-		]
+		"vscode-debugadapter": "1.19.0",
+		"vscode-debugprotocol": "1.19.0"
 	}
 }

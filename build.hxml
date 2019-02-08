@@ -5,4 +5,4 @@
 -D analyzer-optimize
 -lib hxnodejs
 -lib vscode-debugadapter
--debug
+# -debug
