@@ -8,13 +8,14 @@ import js.node.net.Socket.SocketEvent;
 import js.node.stream.Readable.ReadableEvent;
 import Protocol;
 
+using StringTools;
+
 typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments & {
 	var cwd:String;
 	var args:Array<String>;
 	var stopOnEntry:Bool;
 	var haxeExecutable:{
 		var executable:String;
-		var isCommand:Bool;
 		var env:DynamicAccess<String>;
 	};
 }
@@ -61,11 +62,33 @@ class Main extends adapter.DebugSession {
 		loop();
 	}
 
+	function exit() {
+		sendEvent(new adapter.DebugSession.TerminatedEvent(false));
+	}
+
+	function getHaxeVersion(haxe:String, env:DynamicAccess<String>):Array<Int> {
+		var versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env});
+		var output = (versionCheck.stderr : Buffer).toString().trim();
+		if (output == "")
+			output = (versionCheck.stdout : Buffer).toString().trim(); // haxe 4.0 prints -version output to stdout instead
+		return output.split(".").map(Std.parseInt);
+	}
+
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var args:EvalLaunchRequestArguments = cast args;
 		stopOnEntry = args.stopOnEntry;
 		var haxeArgs = args.args;
 		var cwd = args.cwd;
+
+		var haxe = args.haxeExecutable.executable;
+		var env = args.haxeExecutable.env;
+
+		var haxeVersion = getHaxeVersion(haxe, env);
+		if (haxeVersion[0] < 4) {
+			sendErrorResponse(cast response, 3000, 'eval-debugger requires Haxe 4 or newer, found ${haxeVersion.join(".")}');
+			exit();
+			return;
+		}
 
 		function onConnected(socket) {
 			trace("Haxe connected!");
@@ -89,18 +112,14 @@ class Main extends adapter.DebugSession {
 			});
 		}
 
-		function onExit(_, _) {
-			sendEvent(new adapter.DebugSession.TerminatedEvent(false));
-		}
-
 		var server = Net.createServer(onConnected);
 		server.listen(0, function() {
 			var port = server.address().port;
 			var haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
-			var haxeProcess = ChildProcess.spawn(args.haxeExecutable.executable, haxeArgs, {stdio: Pipe, env: args.haxeExecutable.env});
+			var haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
-			haxeProcess.on(ChildProcessEvent.Exit, onExit);
+			haxeProcess.on(ChildProcessEvent.Exit, (_, _) -> exit());
 		});
 	}
 
