@@ -7,8 +7,7 @@ import js.node.net.Socket.SocketEvent;
 import js.node.stream.Readable.ReadableEvent;
 import Protocol;
 
-typedef EvalLaunchRequestArguments = {
-	> protocol.debug.Types.LaunchRequestArguments,
+typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments & {
 	var cwd:String;
 	var args:Array<String>;
 	var stopOnEntry:Bool;

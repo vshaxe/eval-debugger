@@ -3,7 +3,7 @@ import js.node.net.Socket;
 import js.node.Buffer;
 import Protocol;
 
-typedef RequestCallback<T> = Null<Message.Error>->Null<T>->Void;
+typedef RequestCallback<T> = (Null<Message.Error>, Null<T>) -> Void;
 
 class Connection {
 	var socket:Socket;

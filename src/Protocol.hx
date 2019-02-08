@@ -39,7 +39,7 @@ typedef GetCompletionParams = {
 typedef CompletionItem = {
 	var label:String;
 	var type:String;
-	@:optional var start:Int;
+	var ?start:Int;
 }
 
 typedef SetBreakpointsParams = {
@@ -49,12 +49,12 @@ typedef SetBreakpointsParams = {
 
 typedef SetFunctionBreakpointsParams = Array<{
 	var name:String;
-}>
+}>;
 
 typedef SetBreakpointParams = {
 	var file:String;
 	var line:Int;
-	@:optional var column:Int;
+	var ?column:Int;
 }
 
 typedef StackFrameInfo = {
@@ -77,7 +77,7 @@ typedef ScopeInfo = {
 	var name:String;
 
 	/** Position information about scope boundaries, if present **/
-	@:optional var pos:{
+	var ?pos:{
 		source:String,
 		line:Int,
 		column:Int,
