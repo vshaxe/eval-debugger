@@ -1,3 +1,4 @@
+import haxe.DynamicAccess;
 import protocol.debug.Types;
 import js.node.Buffer;
 import js.node.Net;
@@ -11,6 +12,11 @@ typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments
 	var cwd:String;
 	var args:Array<String>;
 	var stopOnEntry:Bool;
+	var haxeExecutable:{
+		var executable:String;
+		var isCommand:Bool;
+		var env:DynamicAccess<String>;
+	};
 }
 
 @:keep
@@ -90,8 +96,8 @@ class Main extends adapter.DebugSession {
 		var server = Net.createServer(onConnected);
 		server.listen(0, function() {
 			var port = server.address().port;
-			var args = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
-			var haxeProcess = ChildProcess.spawn("haxe", args, {stdio: Pipe});
+			var haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
+			var haxeProcess = ChildProcess.spawn(args.haxeExecutable.executable, haxeArgs, {stdio: Pipe, env: args.haxeExecutable.env});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
 			haxeProcess.on(ChildProcessEvent.Exit, onExit);
