@@ -20,7 +20,7 @@
 					"vscode-debugadapter"
 				],
 				"output": {
-					"path": "bin/evalDebug.js",
+					"path": "bin/adapter.js",
 					"target": "js"
 				},
 				"main": "Main"
