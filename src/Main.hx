@@ -205,7 +205,7 @@ class Main extends adapter.DebugSession {
 
 		var mergedVars = [];
 		function requestVars() {
-			stopContext.getVariables(scopes.pop(), vars -> {
+			stopContext.getVariables(scopes.shift(), vars -> {
 				mergedVars = mergedVars.concat(vars);
 				if (scopes.length > 0) {
 					requestVars();
