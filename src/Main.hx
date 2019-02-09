@@ -19,6 +19,7 @@ typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments
 		var executable:String;
 		var env:DynamicAccess<String>;
 	};
+	var mergeScopes:Bool;
 }
 
 @:keep
@@ -51,7 +52,7 @@ class Main extends adapter.DebugSession {
 
 	var connection:Connection;
 	var postLaunchActions:Array<(Void->Void)->Void>;
-	var stopOnEntry:Bool;
+	var launchArgs:EvalLaunchRequestArguments;
 
 	function executePostLaunchActions(callback) {
 		function loop() {
@@ -91,7 +92,7 @@ class Main extends adapter.DebugSession {
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		var args:EvalLaunchRequestArguments = cast args;
-		stopOnEntry = args.stopOnEntry;
+		launchArgs = args;
 		var haxeArgs = args.args;
 		var cwd = args.cwd;
 
@@ -165,34 +166,41 @@ class Main extends adapter.DebugSession {
 
 	var varReferenceMapping:Map<Int, Array<Int>>;
 
+	function mergeScopes(scopes:Array<Scope>) {
+		varReferenceMapping = [];
+		var mergedScopes = new Map<String, Scope>();
+		for (scope in scopes) {
+			var merged = mergedScopes[scope.name];
+			if (merged == null)
+				merged = scope;
+			else {
+				if (scope.line < merged.line)
+					merged.line = scope.line;
+				if (scope.column < merged.line)
+					merged.column = scope.line;
+				if (scope.endLine > merged.endLine)
+					merged.endLine = scope.endLine;
+				if (scope.endColumn > merged.endColumn)
+					merged.endColumn = scope.endColumn;
+			}
+			mergedScopes[merged.name] = merged;
+
+			var mergedRef = merged.variablesReference;
+			var mapping = varReferenceMapping[mergedRef];
+			if (mapping == null)
+				mapping = [];
+			mapping.push(scope.variablesReference);
+			varReferenceMapping[mergedRef] = mapping;
+		}
+		return mergedScopes.array();
+	}
+
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
 		stopContext.getScopes(args.frameId, function(scopes) {
-			varReferenceMapping = [];
-			var mergedScopes = new Map<String, Scope>();
-			for (scope in scopes) {
-				var merged = mergedScopes[scope.name];
-				if (merged == null)
-					merged = scope;
-				else {
-					if (scope.line < merged.line)
-						merged.line = scope.line;
-					if (scope.column < merged.line)
-						merged.column = scope.line;
-					if (scope.endLine > merged.endLine)
-						merged.endLine = scope.endLine;
-					if (scope.endColumn > merged.endColumn)
-						merged.endColumn = scope.endColumn;
-				}
-				mergedScopes[merged.name] = merged;
-
-				var mergedRef = merged.variablesReference;
-				var mapping = varReferenceMapping[mergedRef];
-				if (mapping == null)
-					mapping = [];
-				mapping.push(scope.variablesReference);
-				varReferenceMapping[mergedRef] = mapping;
+			if (launchArgs.mergeScopes) {
+				scopes = mergeScopes(scopes);
 			}
-			response.body = {scopes: mergedScopes.array()};
+			response.body = {scopes: scopes};
 			sendResponse(response);
 			// stopContext.browseVariables(scopes);
 		});
@@ -200,7 +208,7 @@ class Main extends adapter.DebugSession {
 
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
 		var scopes = [args.variablesReference];
-		if (varReferenceMapping.exists(args.variablesReference))
+		if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
 			scopes = varReferenceMapping[args.variablesReference].copy();
 
 		var mergedVars = [];
@@ -372,7 +380,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function configurationDoneRequest(response:ConfigurationDoneResponse, args:ConfigurationDoneArguments) {
-		if (!stopOnEntry) {
+		if (!launchArgs.stopOnEntry) {
 			continueRequest(cast response, null);
 		}
 		sendResponse(response);
