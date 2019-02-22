@@ -25,26 +25,11 @@ class StopContext {
 		return nextId++;
 
 	public function getScopes(frameId:Int, callback:Array<Scope>->Void) {
-		maybeSwitchFrame(frameId, doGetScopes.bind(callback));
-	}
-
-	function maybeSwitchFrame(frameId:Int, callback:Void->Void) {
-		if (currentFrameId != frameId) {
-			connection.sendCommand(Protocol.SwitchFrame, {id: frameId}, function(_, _) {
-				currentFrameId = frameId;
-				callback();
-			});
-		} else {
-			callback();
-		}
-	}
-
-	function doGetScopes(callback:Array<Scope>->Void) {
-		connection.sendCommand(Protocol.GetScopes, {}, function(error, result) {
+		connection.sendCommand(Protocol.GetScopes, {frameId: frameId}, function(error, result) {
 			var scopes:Array<Scope> = [];
 			for (scopeInfo in result) {
 				var reference = getNextId();
-				references[reference] = Scope(currentFrameId, scopeInfo.id);
+				references[reference] = Scope(frameId, scopeInfo.id);
 				var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, reference);
 				if (scopeInfo.pos != null) {
 					var p = scopeInfo.pos;
@@ -67,9 +52,9 @@ class StopContext {
 
 		switch (ref) {
 			case Scope(frameId, scopeId):
-				maybeSwitchFrame(frameId, getScopeVars.bind(frameId, scopeId, reference, callback));
+				getScopeVars(frameId, scopeId, reference, callback);
 			case Var(frameId, expr):
-				maybeSwitchFrame(frameId, getChildVars.bind(frameId, expr, reference, callback));
+				getChildVars(frameId, expr, reference, callback);
 		}
 	}
 
@@ -85,20 +70,20 @@ class StopContext {
 			return callback(null);
 		switch (ref) {
 			case Scope(frameId, _):
-				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
+				setVar(frameId, access, value, callback);
 			case Var(frameId, _):
-				maybeSwitchFrame(frameId, setVar.bind(access, value, callback));
+				setVar(frameId, access, value, callback);
 		}
 	}
 
-	function setVar(access:String, value:String, callback:Null<VarInfo>->Void) {
-		connection.sendCommand(Protocol.SetVariable, {expr: access, value: value}, function(error, result) {
+	function setVar(frameId:Int, access:String, value:String, callback:Null<VarInfo>->Void) {
+		connection.sendCommand(Protocol.SetVariable, {frameId: frameId, expr: access, value: value}, function(error, result) {
 			callback(result);
 		});
 	}
 
 	function getScopeVars(frameId:Int, scopeId:Int, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand(Protocol.GetScopeVariables, {id: scopeId}, function(error, result) {
+		connection.sendCommand(Protocol.GetScopeVariables, {frameId: frameId, id: scopeId}, function(error, result) {
 			var r = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
@@ -111,7 +96,7 @@ class StopContext {
 	}
 
 	function getChildVars(frameId:Int, expr:String, reference:ReferenceId, callback:Array<Variable>->Void) {
-		connection.sendCommand(Protocol.GetStructure, {expr: expr}, function(error, result) {
+		connection.sendCommand(Protocol.GetStructure, {frameId: frameId, expr: expr}, function(error, result) {
 			var r = [];
 			var subvars = new Map();
 			fields[reference] = subvars;
@@ -156,7 +141,7 @@ class StopContext {
 	}
 
 	public function evaluate(args:EvaluateArguments, callback:RequestCallback<VarInfo>) {
-		maybeSwitchFrame(args.frameId, connection.sendCommand.bind(Protocol.Evaluate, {expr: args.expression}, callback));
+		connection.sendCommand(Protocol.Evaluate, {expr: args.expression, frameId: args.frameId}, callback);
 	}
 
 	public function findVar(name:String) {

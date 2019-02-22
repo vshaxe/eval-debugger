@@ -8,6 +8,28 @@ abstract NotificationMethod<TParams>(String) to String {
 		this = method;
 }
 
+typedef StopContextRequestArgs = {
+	var ?threadId:Int;
+	var frameId:Int;
+}
+
+typedef ScopeVarsArgs = StopContextRequestArgs & {
+	var id:Int;
+}
+
+typedef GetStructureArgs = StopContextRequestArgs & {
+	var expr:String;
+}
+
+typedef SetVariableArgs = StopContextRequestArgs & {
+	var expr:String;
+	var value:String;
+}
+
+typedef EvaluateArgs = StopContextRequestArgs & {
+	var expr:String;
+}
+
 @:publicFields
 class Protocol {
 	static inline var Continue = new RequestMethod<{}, Void>("continue");
@@ -19,14 +41,13 @@ class Protocol {
 	static inline var SetFunctionBreakpoints = new RequestMethod<SetFunctionBreakpointsParams, Array<{id:Int}>>("setFunctionBreakpoints");
 	static inline var SetBreakpoint = new RequestMethod<SetBreakpointParams, {id:Int}>("setBreakpoint");
 	static inline var RemoveBreakpoint = new RequestMethod<{id:Int}, Void>("removeBreakpoint");
-	static inline var SwitchFrame = new RequestMethod<{id:Int}, Void>("switchFrame");
-	static inline var GetScopes = new RequestMethod<{}, Array<ScopeInfo>>("getScopes");
-	static inline var GetScopeVariables = new RequestMethod<{}, Array<VarInfo>>("getScopeVariables");
-	static inline var GetStructure = new RequestMethod<{}, Array<VarInfo>>("getStructure");
-	static inline var SetVariable = new RequestMethod<{expr:String, value:String}, VarInfo>("setVariable");
+	static inline var GetScopes = new RequestMethod<StopContextRequestArgs, Array<ScopeInfo>>("getScopes");
+	static inline var GetScopeVariables = new RequestMethod<ScopeVarsArgs, Array<VarInfo>>("getScopeVariables");
+	static inline var GetStructure = new RequestMethod<GetStructureArgs, Array<VarInfo>>("getStructure");
+	static inline var SetVariable = new RequestMethod<SetVariableArgs, VarInfo>("setVariable");
 	static inline var BreakpointStop = new NotificationMethod<Void>("breakpointStop");
 	static inline var ExceptionStop = new NotificationMethod<{text:String}>("exceptionStop");
-	static inline var Evaluate = new RequestMethod<{expr:String}, VarInfo>("evaluate");
+	static inline var Evaluate = new RequestMethod<EvaluateArgs, VarInfo>("evaluate");
 	static inline var SetExceptionOptions = new RequestMethod<Array<String>, Void>("setExceptionOptions");
 	static inline var GetCompletion = new RequestMethod<GetCompletionParams, Array<CompletionItem>>("getCompletion");
 }
