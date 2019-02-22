@@ -124,22 +124,6 @@ class StopContext {
 		return v;
 	}
 
-	public function browseVariables(scopes:Array<Scope>) {
-		// get all variables so hovering works
-		var seen = new Map();
-		for (scope in scopes) {
-			function explore(vars:Array<Variable>) {
-				for (v in vars) {
-					if (!seen.exists(v.variablesReference)) {
-						seen[v.variablesReference] = true;
-						getVariables(v.variablesReference, explore);
-					}
-				}
-			}
-			getVariables(scope.variablesReference, explore);
-		}
-	}
-
 	public function evaluate(args:EvaluateArguments, callback:RequestCallback<VarInfo>) {
 		connection.sendCommand(Protocol.Evaluate, {expr: args.expression, frameId: args.frameId}, callback);
 	}

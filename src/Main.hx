@@ -202,7 +202,6 @@ class Main extends adapter.DebugSession {
 			}
 			response.body = {scopes: scopes};
 			sendResponse(response);
-			// stopContext.browseVariables(scopes);
 		});
 	}
 
