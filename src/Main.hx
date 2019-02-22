@@ -35,7 +35,7 @@ class Main extends adapter.DebugSession {
 
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
-		response.body.supportsSetVariable = true;
+		// response.body.supportsSetVariable = true;
 		response.body.supportsEvaluateForHovers = true;
 		response.body.supportsConditionalBreakpoints = true;
 		response.body.supportsExceptionOptions = true;
@@ -216,40 +216,34 @@ class Main extends adapter.DebugSession {
 				}
 				scopes.push(scope);
 			}
-			// if (launchArgs.mergeScopes) {
-			// 	scopes = mergeScopes(scopes);
-			// }
+			if (launchArgs.mergeScopes) {
+				scopes = mergeScopes(scopes);
+			}
 			response.body = {scopes: scopes};
 			sendResponse(response);
 		});
 	}
 
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
-		// var scopes = [args.variablesReference];
-		// // if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
-		// // 	scopes = varReferenceMapping[args.variablesReference].copy();
+		var scopes = [args.variablesReference];
+		if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
+			scopes = varReferenceMapping[args.variablesReference].copy();
 
-		// var mergedVars = [];
-		// function requestVars() {
-		// 	stopContext.getVariables(scopes.shift(), vars -> {
-		// 		mergedVars = mergedVars.concat(vars);
-		// 		if (scopes.length > 0) {
-		// 			requestVars();
-		// 		} else {
-		// 			response.body = {variables: mergedVars};
-		// 			sendResponse(response);
-		// 		}
-		// 	});
-		// }
-		// requestVars();
-		connection.sendCommand(Protocol.GetScopeVariables, {id: args.variablesReference}, function(error, result) {
-			var r = [];
-			for (varInfo in result) {
-				r.push(varInfoToVariable(varInfo));
-			}
-			response.body = {variables: r};
-			sendResponse(response);
-		});
+		var mergedVars = [];
+		function requestVars() {
+			connection.sendCommand(Protocol.GetScopeVariables, {id: scopes.shift()}, function(error, result) {
+				for (varInfo in result) {
+					mergedVars.push(varInfoToVariable(varInfo));
+				}
+				if (scopes.length > 0) {
+					requestVars();
+				} else {
+					response.body = {variables: mergedVars};
+					sendResponse(response);
+				}
+			});
+		}
+		requestVars();
 	}
 
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
