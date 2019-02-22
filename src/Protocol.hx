@@ -44,7 +44,6 @@ class Protocol {
 	static inline var RemoveBreakpoint = new RequestMethod<{id:Int}, Void>("removeBreakpoint");
 	static inline var GetScopes = new RequestMethod<ScopeArgs, Array<ScopeInfo>>("getScopes");
 	static inline var GetScopeVariables = new RequestMethod<ScopeVarsArgs, Array<VarInfo>>("getScopeVariables");
-	static inline var GetStructure = new RequestMethod<GetStructureArgs, Array<VarInfo>>("getStructure");
 	static inline var SetVariable = new RequestMethod<SetVariableArgs, VarInfo>("setVariable");
 	static inline var BreakpointStop = new NotificationMethod<Void>("breakpointStop");
 	static inline var ExceptionStop = new NotificationMethod<{text:String}>("exceptionStop");
@@ -121,6 +120,9 @@ typedef VarInfo = {
 
 	/** Current value to display (structured child values are rendered with `...`) **/
 	var value:String;
+
+	/** The number of children the value has. **/
+	var numChildren:Int;
 }
 
 typedef AccessExpr = String;

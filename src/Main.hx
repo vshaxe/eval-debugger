@@ -191,6 +191,16 @@ class Main extends adapter.DebugSession {
 		return mergedScopes.array();
 	}
 
+	function varInfoToVariable(varInfo:VarInfo):Variable {
+		return {
+			name: varInfo.name,
+			value: varInfo.value,
+			type: varInfo.type,
+			variablesReference: varInfo.id,
+			namedVariables: varInfo.numChildren
+		};
+	}
+
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
 		connection.sendCommand(Protocol.GetScopes, {frameId: args.frameId}, function(error, result) {
 			var scopes:Array<Scope> = [];
@@ -235,13 +245,7 @@ class Main extends adapter.DebugSession {
 		connection.sendCommand(Protocol.GetScopeVariables, {id: args.variablesReference}, function(error, result) {
 			var r = [];
 			for (varInfo in result) {
-				var v:Variable = {
-					name: varInfo.name,
-					value: varInfo.value,
-					type: varInfo.type,
-					variablesReference: varInfo.id
-				};
-				r.push(v);
+				r.push(varInfoToVariable(varInfo));
 			}
 			response.body = {variables: r};
 			sendResponse(response);
@@ -254,7 +258,12 @@ class Main extends adapter.DebugSession {
 			name: args.name,
 			value: args.value
 		}, function(error, result) {
-			response.body = {value: result.value};
+			response.body = {
+				variablesReference: result.id,
+				type: result.type,
+				value: result.value,
+				namedVariables: result.numChildren
+			};
 			sendResponse(response);
 		});
 	}
@@ -374,8 +383,9 @@ class Main extends adapter.DebugSession {
 		connection.sendCommand(Protocol.Evaluate, {expr: args.expression, frameId: args.frameId}, function(error, result) {
 			response.body = {
 				result: result.value,
+				variablesReference: result.id,
 				type: result.type,
-				variablesReference: result.id
+				namedVariables: result.numChildren
 			}
 			sendResponse(response);
 		});
