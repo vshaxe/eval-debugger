@@ -8,25 +8,26 @@ abstract NotificationMethod<TParams>(String) to String {
 		this = method;
 }
 
-typedef StopContextRequestArgs = {
-	var ?threadId:Int;
+typedef ScopeArgs = {
 	var frameId:Int;
 }
 
-typedef ScopeVarsArgs = StopContextRequestArgs & {
+typedef ScopeVarsArgs = {
 	var id:Int;
 }
 
-typedef GetStructureArgs = StopContextRequestArgs & {
+typedef GetStructureArgs = {
 	var expr:String;
 }
 
-typedef SetVariableArgs = StopContextRequestArgs & {
-	var expr:String;
+typedef SetVariableArgs = {
+	var id:Int;
+	var name:String;
 	var value:String;
 }
 
-typedef EvaluateArgs = StopContextRequestArgs & {
+typedef EvaluateArgs = {
+	var frameId:Int;
 	var expr:String;
 }
 
@@ -41,7 +42,7 @@ class Protocol {
 	static inline var SetFunctionBreakpoints = new RequestMethod<SetFunctionBreakpointsParams, Array<{id:Int}>>("setFunctionBreakpoints");
 	static inline var SetBreakpoint = new RequestMethod<SetBreakpointParams, {id:Int}>("setBreakpoint");
 	static inline var RemoveBreakpoint = new RequestMethod<{id:Int}, Void>("removeBreakpoint");
-	static inline var GetScopes = new RequestMethod<StopContextRequestArgs, Array<ScopeInfo>>("getScopes");
+	static inline var GetScopes = new RequestMethod<ScopeArgs, Array<ScopeInfo>>("getScopes");
 	static inline var GetScopeVariables = new RequestMethod<ScopeVarsArgs, Array<VarInfo>>("getScopeVariables");
 	static inline var GetStructure = new RequestMethod<GetStructureArgs, Array<VarInfo>>("getStructure");
 	static inline var SetVariable = new RequestMethod<SetVariableArgs, VarInfo>("setVariable");
@@ -109,6 +110,9 @@ typedef ScopeInfo = {
 
 /** Info about a scope variable or its subvariable (a field, array element or something) as returned by Haxe eval debugger **/
 typedef VarInfo = {
+	/** A unique identifier for this variable. **/
+	var id:Int;
+
 	/** Variable/field name, for array elements or enum ctor arguments looks like `[0]` **/
 	var name:String;
 
@@ -117,14 +121,6 @@ typedef VarInfo = {
 
 	/** Current value to display (structured child values are rendered with `...`) **/
 	var value:String;
-
-	/** True if this variable is structured, meaning that we can request "subvariables" (fields/elements) **/
-	var structured:Bool;
-
-	/** Access expression used to reference this variable.
-		For scope-level vars it's the same as name, for child vars it's an expression like `a.b[0].c[1]`.
-	**/
-	var access:AccessExpr;
 }
 
 typedef AccessExpr = String;

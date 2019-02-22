@@ -149,15 +149,11 @@ class Main extends adapter.DebugSession {
 		sendEvent(new adapter.DebugSession.OutputEvent(data.toString("utf-8"), stderr));
 	}
 
-	var stopContext:StopContext;
-
 	function onEvent<P>(type:NotificationMethod<P>, data:P) {
 		switch (type) {
 			case Protocol.BreakpointStop:
-				stopContext = new StopContext(connection);
 				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
 			case Protocol.ExceptionStop:
-				stopContext = new StopContext(connection);
 				var evt = new adapter.DebugSession.StoppedEvent("exception", 0);
 				evt.body.text = data.text;
 				sendEvent(evt);
@@ -196,39 +192,69 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
-		stopContext.getScopes(args.frameId, function(scopes) {
-			if (launchArgs.mergeScopes) {
-				scopes = mergeScopes(scopes);
+		connection.sendCommand(Protocol.GetScopes, {frameId: args.frameId}, function(error, result) {
+			var scopes:Array<Scope> = [];
+			for (scopeInfo in result) {
+				var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
+				if (scopeInfo.pos != null) {
+					var p = scopeInfo.pos;
+					scope.source = {path: p.source};
+					scope.line = p.line;
+					scope.column = p.column;
+					scope.endLine = p.endLine;
+					scope.endColumn = p.endColumn;
+				}
+				scopes.push(scope);
 			}
+			// if (launchArgs.mergeScopes) {
+			// 	scopes = mergeScopes(scopes);
+			// }
 			response.body = {scopes: scopes};
 			sendResponse(response);
 		});
 	}
 
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
-		var scopes = [args.variablesReference];
-		if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
-			scopes = varReferenceMapping[args.variablesReference].copy();
+		// var scopes = [args.variablesReference];
+		// // if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
+		// // 	scopes = varReferenceMapping[args.variablesReference].copy();
 
-		var mergedVars = [];
-		function requestVars() {
-			stopContext.getVariables(scopes.shift(), vars -> {
-				mergedVars = mergedVars.concat(vars);
-				if (scopes.length > 0) {
-					requestVars();
-				} else {
-					response.body = {variables: mergedVars};
-					sendResponse(response);
-				}
-			});
-		}
-		requestVars();
+		// var mergedVars = [];
+		// function requestVars() {
+		// 	stopContext.getVariables(scopes.shift(), vars -> {
+		// 		mergedVars = mergedVars.concat(vars);
+		// 		if (scopes.length > 0) {
+		// 			requestVars();
+		// 		} else {
+		// 			response.body = {variables: mergedVars};
+		// 			sendResponse(response);
+		// 		}
+		// 	});
+		// }
+		// requestVars();
+		connection.sendCommand(Protocol.GetScopeVariables, {id: args.variablesReference}, function(error, result) {
+			var r = [];
+			for (varInfo in result) {
+				var v:Variable = {
+					name: varInfo.name,
+					value: varInfo.value,
+					type: varInfo.type,
+					variablesReference: varInfo.id
+				};
+				r.push(v);
+			}
+			response.body = {variables: r};
+			sendResponse(response);
+		});
 	}
 
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
-		stopContext.setVariable(args.variablesReference, args.name, args.value, function(varInfo) {
-			if (varInfo != null)
-				response.body = {value: varInfo.value};
+		connection.sendCommand(Protocol.SetVariable, {
+			id: args.variablesReference,
+			name: args.name,
+			value: args.value
+		}, function(error, result) {
+			response.body = {value: result.value};
 			sendResponse(response);
 		});
 	}
@@ -345,31 +371,13 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function evaluateRequest(response:EvaluateResponse, args:EvaluateArguments) {
-		// I don't want to have to commit this...
-		// if (args.context == "hover") {
-		// 	switch (args.expression.charCodeAt(0)) {
-		// 		case '"'.code if (!~/[^\\]"/.matchSub(args.expression, 1)):
-		// 			args.expression += '"';
-		// 		case "'".code if (!~/[^\\]'/.matchSub(args.expression, 1)):
-		// 			args.expression += "'";
-		// 		case _:
-		// 	}
-		// }
-		stopContext.evaluate(args, function(error, result) {
-			respond(response, error, function() {
-				response.success = true;
-				var ref = if (!result.structured) {
-					0;
-				} else {
-					var v = stopContext.findVar(args.expression);
-					v == null ? 0 : v.variablesReference;
-				}
-				response.body = {
-					result: result.value,
-					type: result.type,
-					variablesReference: ref
-				}
-			});
+		connection.sendCommand(Protocol.Evaluate, {expr: args.expression, frameId: args.frameId}, function(error, result) {
+			response.body = {
+				result: result.value,
+				type: result.type,
+				variablesReference: result.id
+			}
+			sendResponse(response);
 		});
 	}
 
