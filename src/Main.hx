@@ -84,9 +84,11 @@ class Main extends adapter.DebugSession {
 		if (versionCheck.status != 0)
 			return error("Haxe version check failed: " + output);
 
-		var majorVersion = Std.parseInt(output.split(".")[0]);
-		if (majorVersion < 4)
-			return error('eval-debugger requires Haxe 4 or newer, found $output');
+		var parts = ~/[\.\-+]/g.split(output);
+		var majorVersion = Std.parseInt(parts[0]);
+		var preRelease = parts[3];
+		if (majorVersion < 4 || (majorVersion == 4 && preRelease == "preview")) // TODO: error on rc.1
+			return error('eval-debugger requires Haxe 4.0.0-rc.2 or newer, found $output');
 
 		return true;
 	}
