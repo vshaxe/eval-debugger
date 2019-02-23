@@ -223,9 +223,10 @@ class Main extends adapter.DebugSession {
 		var mergedVars = [];
 		var names:Map<String, Int> = [];
 
-		function getDisplayName(name:String) {
+		function getDisplayName(varInfo:VarInfo) {
+			var name = varInfo.name;
 			if (names.exists(name)) {
-				return '${name}(${names[name]++})';
+				return '${name} - line ${varInfo.line}';
 			} else {
 				names[name] = 0;
 				return name;
@@ -238,7 +239,7 @@ class Main extends adapter.DebugSession {
 					if (varInfo.generated) {
 						continue;
 					}
-					var displayName = getDisplayName(varInfo.name);
+					var displayName = getDisplayName(varInfo);
 					scope.vars.push(displayName);
 					var v = {
 						name: displayName,
@@ -264,7 +265,7 @@ class Main extends adapter.DebugSession {
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
 		var realRef = args.variablesReference;
 		function getRealName() {
-			var index = args.name.indexOf("(");
+			var index = args.name.indexOf(" ");
 			if (index == -1) {
 				return args.name;
 			}
