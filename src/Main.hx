@@ -20,6 +20,7 @@ typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments
 		var env:DynamicAccess<String>;
 	};
 	var mergeScopes:Bool;
+	var showGeneratedVariables:Bool;
 }
 
 @:keep
@@ -236,7 +237,7 @@ class Main extends adapter.DebugSession {
 			var scope = scopes.shift();
 			connection.sendCommand(Protocol.GetScopeVariables, {id: scope.id}, function(error, result) {
 				for (varInfo in result) {
-					if (varInfo.generated) {
+					if (varInfo.generated && !launchArgs.showGeneratedVariables) {
 						continue;
 					}
 					var displayName = getDisplayName(varInfo);
