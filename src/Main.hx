@@ -193,24 +193,25 @@ class Main extends adapter.DebugSession {
 
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
 		connection.sendCommand(Protocol.GetScopes, {frameId: args.frameId}, function(error, result) {
-			var scopes:Array<Scope> = [];
-			for (scopeInfo in result) {
-				var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
-				if (scopeInfo.pos != null) {
-					var p = scopeInfo.pos;
-					scope.source = {path: p.source};
-					scope.line = p.line;
-					scope.column = p.column;
-					scope.endLine = p.endLine;
-					scope.endColumn = p.endColumn;
+			respond(response, error, function() {
+				var scopes:Array<Scope> = [];
+				for (scopeInfo in result) {
+					var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
+					if (scopeInfo.pos != null) {
+						var p = scopeInfo.pos;
+						scope.source = {path: p.source};
+						scope.line = p.line;
+						scope.column = p.column;
+						scope.endLine = p.endLine;
+						scope.endColumn = p.endColumn;
+					}
+					scopes.push(scope);
 				}
-				scopes.push(scope);
-			}
-			if (launchArgs.mergeScopes) {
-				scopes = mergeScopes(scopes);
-			}
-			response.body = {scopes: scopes};
-			sendResponse(response);
+				if (launchArgs.mergeScopes) {
+					scopes = mergeScopes(scopes);
+				}
+				response.body = {scopes: scopes};
+			});
 		});
 	}
 
@@ -284,13 +285,14 @@ class Main extends adapter.DebugSession {
 			name: getRealName(),
 			value: args.value
 		}, function(error, result) {
-			response.body = {
-				variablesReference: result.id,
-				type: result.type,
-				value: result.value,
-				namedVariables: result.numChildren
-			};
-			sendResponse(response);
+			respond(response, error, function() {
+				response.body = {
+					variablesReference: result.id,
+					type: result.type,
+					value: result.value,
+					namedVariables: result.numChildren
+				};
+			});
 		});
 	}
 
@@ -365,20 +367,18 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function setFunctionBreakPointsRequest(response:SetFunctionBreakpointsResponse, args:SetFunctionBreakpointsArguments) {
-		function doSetFunctionBreakpoints(callback) {
+		function doSetFunctionBreakpoints() {
 			connection.sendCommand(Protocol.SetFunctionBreakpoints, args.breakpoints, function(error, result) {
 				respond(response, error, function() {
 					response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
 					response.success = true;
 				});
-				if (callback != null)
-					callback();
 			});
 		}
 		if (connection == null)
-			postLaunchActions.push(cb -> doSetFunctionBreakpoints(cb))
+			postLaunchActions.push(cb -> doSetFunctionBreakpoints())
 		else
-			doSetFunctionBreakpoints(null);
+			doSetFunctionBreakpoints();
 	}
 
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
@@ -396,26 +396,29 @@ class Main extends adapter.DebugSession {
 			]
 		}
 		connection.sendCommand(Protocol.SetBreakpoints, params, function(error, result) {
-			response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
-			sendResponse(response);
+			respond(response, error, function() {
+				response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
+			});
 		});
 	}
 
 	override function evaluateRequest(response:EvaluateResponse, args:EvaluateArguments) {
 		connection.sendCommand(Protocol.Evaluate, {expr: args.expression, frameId: args.frameId}, function(error, result) {
-			response.body = {
-				result: result.value,
-				variablesReference: result.id,
-				type: result.type,
-				namedVariables: result.numChildren
-			}
-			sendResponse(response);
+			respond(response, error, function() {
+				response.body = {
+					result: result.value,
+					variablesReference: result.id,
+					type: result.type,
+					namedVariables: result.numChildren
+				}
+			});
 		});
 	}
 
 	override function setExceptionBreakPointsRequest(response:SetExceptionBreakpointsResponse, args:SetExceptionBreakpointsArguments) {
-		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {});
-		sendResponse(response);
+		connection.sendCommand(Protocol.SetExceptionOptions, args.filters, function(error, result) {
+			respond(response, error, function() {});
+		});
 	}
 
 	override function configurationDoneRequest(response:ConfigurationDoneResponse, args:ConfigurationDoneArguments) {
