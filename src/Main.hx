@@ -359,9 +359,9 @@ class Main extends adapter.DebugSession {
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
 		if (connection == null)
-			postLaunchActions.push(cb -> doSetBreakpoints(response, args, cb));
+			postLaunchActions.push(cb -> doSetBreakpoints(response, args));
 		else
-			doSetBreakpoints(response, args, null);
+			doSetBreakpoints(response, args);
 	}
 
 	override function setFunctionBreakPointsRequest(response:SetFunctionBreakpointsResponse, args:SetFunctionBreakpointsArguments) {
@@ -381,7 +381,7 @@ class Main extends adapter.DebugSession {
 			doSetFunctionBreakpoints(null);
 	}
 
-	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments, callback:Null<Void->Void>) {
+	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
 		var params:SetBreakpointsParams = {
 			file: args.source.path,
 			breakpoints: [
@@ -396,12 +396,8 @@ class Main extends adapter.DebugSession {
 			]
 		}
 		connection.sendCommand(Protocol.SetBreakpoints, params, function(error, result) {
-			respond(response, error, function() {
-				response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
-				sendResponse(response);
-			});
-			if (callback != null)
-				callback();
+			response.body = {breakpoints: [for (bp in result) {verified: true, id: bp.id}]};
+			sendResponse(response);
 		});
 	}
 
@@ -425,8 +421,9 @@ class Main extends adapter.DebugSession {
 	override function configurationDoneRequest(response:ConfigurationDoneResponse, args:ConfigurationDoneArguments) {
 		if (!launchArgs.stopOnEntry) {
 			continueRequest(cast response, null);
+		} else {
+			sendResponse(response);
 		}
-		sendResponse(response);
 	}
 
 	override function completionsRequest(response:CompletionsResponse, args:CompletionsArguments) {
