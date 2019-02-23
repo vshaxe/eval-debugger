@@ -123,6 +123,9 @@ typedef VarInfo = {
 
 	/** The number of children the value has. **/
 	var numChildren:Int;
+	var ?generated:Bool;
+	var ?line:Int;
+	var ?column:Int;
 }
 
 typedef AccessExpr = String;

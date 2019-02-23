@@ -235,6 +235,9 @@ class Main extends adapter.DebugSession {
 			var scope = scopes.shift();
 			connection.sendCommand(Protocol.GetScopeVariables, {id: scope.id}, function(error, result) {
 				for (varInfo in result) {
+					if (varInfo.generated) {
+						continue;
+					}
 					var displayName = getDisplayName(varInfo.name);
 					scope.vars.push(displayName);
 					var v = {
