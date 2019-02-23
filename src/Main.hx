@@ -35,7 +35,7 @@ class Main extends adapter.DebugSession {
 
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
 		// haxe.Log.trace = traceToOutput;
-		// response.body.supportsSetVariable = true;
+		response.body.supportsSetVariable = true;
 		response.body.supportsEvaluateForHovers = true;
 		response.body.supportsConditionalBreakpoints = true;
 		response.body.supportsExceptionOptions = true;
@@ -160,7 +160,7 @@ class Main extends adapter.DebugSession {
 		}
 	}
 
-	var varReferenceMapping:Map<Int, Array<Int>>;
+	var varReferenceMapping:Map<Int, Array<{id:Int, vars:Array<String>}>>;
 
 	function mergeScopes(scopes:Array<Scope>) {
 		varReferenceMapping = [];
@@ -185,7 +185,7 @@ class Main extends adapter.DebugSession {
 			var mapping = varReferenceMapping[mergedRef];
 			if (mapping == null)
 				mapping = [];
-			mapping.push(scope.variablesReference);
+			mapping.push({id: scope.variablesReference, vars: []});
 			varReferenceMapping[mergedRef] = mapping;
 		}
 		return mergedScopes.array();
@@ -225,14 +225,16 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function variablesRequest(response:VariablesResponse, args:VariablesArguments) {
-		var scopes = [args.variablesReference];
+		var scopes = [{id: args.variablesReference, vars: []}];
 		if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
 			scopes = varReferenceMapping[args.variablesReference].copy();
 
 		var mergedVars = [];
 		function requestVars() {
-			connection.sendCommand(Protocol.GetScopeVariables, {id: scopes.shift()}, function(error, result) {
+			var scope = scopes.shift();
+			connection.sendCommand(Protocol.GetScopeVariables, {id: scope.id}, function(error, result) {
 				for (varInfo in result) {
+					scope.vars.push(varInfo.name);
 					mergedVars.push(varInfoToVariable(varInfo));
 				}
 				if (scopes.length > 0) {
@@ -247,8 +249,22 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
+		var realRef = args.variablesReference;
+		if (launchArgs.mergeScopes) {
+			function getRealRef() {
+				for (scope in varReferenceMapping[realRef]) {
+					for (name in scope.vars) {
+						if (name == args.name) {
+							return scope.id;
+						}
+					}
+				}
+				return realRef;
+			}
+			realRef = getRealRef();
+		}
 		connection.sendCommand(Protocol.SetVariable, {
-			id: args.variablesReference,
+			id: realRef,
 			name: args.name,
 			value: args.value
 		}, function(error, result) {
