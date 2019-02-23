@@ -191,16 +191,6 @@ class Main extends adapter.DebugSession {
 		return mergedScopes.array();
 	}
 
-	function varInfoToVariable(varInfo:VarInfo):Variable {
-		return {
-			name: varInfo.name,
-			value: varInfo.value,
-			type: varInfo.type,
-			variablesReference: varInfo.id,
-			namedVariables: varInfo.numChildren
-		};
-	}
-
 	override function scopesRequest(response:ScopesResponse, args:ScopesArguments) {
 		connection.sendCommand(Protocol.GetScopes, {frameId: args.frameId}, function(error, result) {
 			var scopes:Array<Scope> = [];
@@ -230,12 +220,31 @@ class Main extends adapter.DebugSession {
 			scopes = varReferenceMapping[args.variablesReference].copy();
 
 		var mergedVars = [];
+		var names:Map<String, Int> = [];
+
+		function getDisplayName(name:String) {
+			if (names.exists(name)) {
+				return '${name}(${names[name]++})';
+			} else {
+				names[name] = 0;
+				return name;
+			}
+		}
 		function requestVars() {
 			var scope = scopes.shift();
 			connection.sendCommand(Protocol.GetScopeVariables, {id: scope.id}, function(error, result) {
 				for (varInfo in result) {
-					scope.vars.push(varInfo.name);
-					mergedVars.push(varInfoToVariable(varInfo));
+					var displayName = getDisplayName(varInfo.name);
+					scope.vars.push(displayName);
+					var v = {
+						name: displayName,
+						value: varInfo.value,
+						type: varInfo.type,
+						variablesReference: varInfo.id,
+						namedVariables: varInfo.numChildren,
+						evaluateName: varInfo.name
+					};
+					mergedVars.push(v);
 				}
 				if (scopes.length > 0) {
 					requestVars();
@@ -250,6 +259,13 @@ class Main extends adapter.DebugSession {
 
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
 		var realRef = args.variablesReference;
+		function getRealName() {
+			var index = args.name.indexOf("(");
+			if (index == -1) {
+				return args.name;
+			}
+			return args.name.substr(0, index);
+		}
 		if (launchArgs.mergeScopes) {
 			function getRealRef() {
 				for (scope in varReferenceMapping[realRef]) {
@@ -265,7 +281,7 @@ class Main extends adapter.DebugSession {
 		}
 		connection.sendCommand(Protocol.SetVariable, {
 			id: realRef,
-			name: args.name,
+			name: getRealName(),
 			value: args.value
 		}, function(error, result) {
 			response.body = {
