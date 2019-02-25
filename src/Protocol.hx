@@ -81,7 +81,7 @@ typedef SetBreakpointParams = {
 typedef StackFrameInfo = {
 	var id:Int;
 	var name:String;
-	var source:String;
+	var source:Null<String>;
 	var line:Int;
 	var column:Int;
 	var endLine:Int;

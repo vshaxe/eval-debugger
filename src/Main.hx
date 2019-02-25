@@ -329,25 +329,16 @@ class Main extends adapter.DebugSession {
 			respond(response, error, function() {
 				var r:Array<StackFrame> = [];
 				for (info in result) {
-					if (info.artificial) {
-						r.push({
-							id: info.id,
-							name: "Internal",
-							line: 0,
-							column: 0,
-							presentationHint: label,
-						});
-					} else {
-						r.push({
-							id: info.id,
-							name: info.name,
-							source: {path: info.source},
-							line: info.line,
-							column: info.column,
-							endLine: info.endLine,
-							endColumn: info.endColumn,
-						});
-					}
+					r.push({
+						id: info.id,
+						name: info.name == "?" ? "Internal" : info.name,
+						source: info.source == null ? null : {path: info.source},
+						line: info.line,
+						column: info.column,
+						endLine: info.endLine,
+						endColumn: info.endColumn,
+						presentationHint: info.artificial ? label : normal
+					});
 				}
 				response.body = {
 					stackFrames: r
