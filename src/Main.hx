@@ -237,7 +237,7 @@ class Main extends adapter.DebugSession {
 		}
 		function requestVars() {
 			var scope = scopes.shift();
-			connection.sendCommand(Protocol.GetScopeVariables, {id: scope.id}, function(error, result) {
+			connection.sendCommand(Protocol.GetVariables, {id: scope.id}, function(error, result) {
 				for (varInfo in result) {
 					if (varInfo.generated && !launchArgs.showGeneratedVariables) {
 						continue;

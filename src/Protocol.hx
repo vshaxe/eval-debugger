@@ -43,7 +43,7 @@ class Protocol {
 	static inline var SetBreakpoint = new RequestMethod<SetBreakpointParams, {id:Int}>("setBreakpoint");
 	static inline var RemoveBreakpoint = new RequestMethod<{id:Int}, Void>("removeBreakpoint");
 	static inline var GetScopes = new RequestMethod<ScopeArgs, Array<ScopeInfo>>("getScopes");
-	static inline var GetScopeVariables = new RequestMethod<ScopeVarsArgs, Array<VarInfo>>("getScopeVariables");
+	static inline var GetVariables = new RequestMethod<ScopeVarsArgs, Array<VarInfo>>("getVariables");
 	static inline var SetVariable = new RequestMethod<SetVariableArgs, VarInfo>("setVariable");
 	static inline var BreakpointStop = new NotificationMethod<Void>("breakpointStop");
 	static inline var ExceptionStop = new NotificationMethod<{text:String}>("exceptionStop");
