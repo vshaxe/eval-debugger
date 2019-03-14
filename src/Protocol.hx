@@ -1,3 +1,5 @@
+import protocol.debug.Types.Thread;
+
 abstract RequestMethod<TParams, TResult>(String) to String {
 	public inline function new(method)
 		this = method;
@@ -33,11 +35,13 @@ typedef EvaluateArgs = {
 
 @:publicFields
 class Protocol {
-	static inline var Continue = new RequestMethod<{}, Void>("continue");
-	static inline var StepIn = new RequestMethod<{}, Void>("stepIn");
-	static inline var Next = new RequestMethod<{}, Void>("next");
-	static inline var StepOut = new RequestMethod<{}, Void>("stepOut");
-	static inline var StackTrace = new RequestMethod<{}, Array<StackFrameInfo>>("stackTrace");
+	static inline var Pause = new RequestMethod<{?threadId:Int}, Void>("pause");
+	static inline var Continue = new RequestMethod<{?threadId:Int}, Void>("continue");
+	static inline var StepIn = new RequestMethod<{?threadId:Int}, Void>("stepIn");
+	static inline var Next = new RequestMethod<{?threadId:Int}, Void>("next");
+	static inline var StepOut = new RequestMethod<{?threadId:Int}, Void>("stepOut");
+	static inline var GetThreads = new RequestMethod<{}, Array<Thread>>("getThreads");
+	static inline var StackTrace = new RequestMethod<{?threadId:Int}, Array<StackFrameInfo>>("stackTrace");
 	static inline var SetBreakpoints = new RequestMethod<SetBreakpointsParams, Array<{id:Int}>>("setBreakpoints");
 	static inline var SetFunctionBreakpoints = new RequestMethod<SetFunctionBreakpointsParams, Array<{id:Int}>>("setFunctionBreakpoints");
 	static inline var SetBreakpoint = new RequestMethod<SetBreakpointParams, {id:Int}>("setBreakpoint");
@@ -45,8 +49,8 @@ class Protocol {
 	static inline var GetScopes = new RequestMethod<ScopeArgs, Array<ScopeInfo>>("getScopes");
 	static inline var GetVariables = new RequestMethod<ScopeVarsArgs, Array<VarInfo>>("getVariables");
 	static inline var SetVariable = new RequestMethod<SetVariableArgs, VarInfo>("setVariable");
-	static inline var BreakpointStop = new NotificationMethod<Void>("breakpointStop");
-	static inline var ExceptionStop = new NotificationMethod<{text:String}>("exceptionStop");
+	static inline var BreakpointStop = new NotificationMethod<{threadId:Int}>("breakpointStop");
+	static inline var ExceptionStop = new NotificationMethod<{threadId:Int, text:String}>("exceptionStop");
 	static inline var Evaluate = new RequestMethod<EvaluateArgs, VarInfo>("evaluate");
 	static inline var SetExceptionOptions = new RequestMethod<Array<String>, Void>("setExceptionOptions");
 	static inline var GetCompletion = new RequestMethod<GetCompletionParams, Array<CompletionItem>>("getCompletion");
