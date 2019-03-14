@@ -51,6 +51,7 @@ class Protocol {
 	static inline var SetVariable = new RequestMethod<SetVariableArgs, VarInfo>("setVariable");
 	static inline var BreakpointStop = new NotificationMethod<{threadId:Int}>("breakpointStop");
 	static inline var ExceptionStop = new NotificationMethod<{threadId:Int, text:String}>("exceptionStop");
+	static inline var ThreadEvent = new NotificationMethod<{threadId:Int, reason:String}>("threadEvent");
 	static inline var Evaluate = new RequestMethod<EvaluateArgs, VarInfo>("evaluate");
 	static inline var SetExceptionOptions = new RequestMethod<Array<String>, Void>("setExceptionOptions");
 	static inline var GetCompletion = new RequestMethod<GetCompletionParams, Array<CompletionItem>>("getCompletion");

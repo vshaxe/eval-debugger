@@ -160,6 +160,8 @@ class Main extends adapter.DebugSession {
 				var evt = new adapter.DebugSession.StoppedEvent("exception", data.threadId);
 				evt.body.text = data.text;
 				sendEvent(evt);
+			case Protocol.ThreadEvent:
+				sendEvent(new adapter.DebugSession.ThreadEvent(data.reason, data.threadId));
 		}
 	}
 
