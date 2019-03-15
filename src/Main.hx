@@ -155,11 +155,13 @@ class Main extends adapter.DebugSession {
 	function onEvent<P>(type:NotificationMethod<P>, data:P) {
 		switch (type) {
 			case Protocol.BreakpointStop:
-				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", 0));
+				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", data.threadId));
 			case Protocol.ExceptionStop:
-				var evt = new adapter.DebugSession.StoppedEvent("exception", 0);
+				var evt = new adapter.DebugSession.StoppedEvent("exception", data.threadId);
 				evt.body.text = data.text;
 				sendEvent(evt);
+			case Protocol.ThreadEvent:
+				sendEvent(new adapter.DebugSession.ThreadEvent(data.reason, data.threadId));
 		}
 	}
 
@@ -303,29 +305,36 @@ class Main extends adapter.DebugSession {
 		});
 	}
 
-	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
-		connection.sendCommand(Protocol.StepIn, {}, function(error, _) {
+	override function pauseRequest(response:PauseResponse, args:PauseArguments) {
+		connection.sendCommand(Protocol.Pause, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+			sendEvent(new adapter.DebugSession.StoppedEvent("paused", args.threadId));
+		});
+	}
+
+	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
+		connection.sendCommand(Protocol.StepIn, {threadId: args.threadId}, function(error, _) {
+			respond(response, error, function() {});
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", args.threadId));
 		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
-		connection.sendCommand(Protocol.StepOut, {}, function(error, _) {
+		connection.sendCommand(Protocol.StepOut, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", args.threadId));
 		});
 	}
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
-		connection.sendCommand(Protocol.Next, {}, function(error, _) {
+		connection.sendCommand(Protocol.Next, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", 0));
+			sendEvent(new adapter.DebugSession.StoppedEvent("step", args.threadId));
 		});
 	}
 
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
-		connection.sendCommand(Protocol.StackTrace, {}, function(error, result) {
+		connection.sendCommand(Protocol.StackTrace, {threadId: args.threadId}, function(error, result) {
 			respond(response, error, function() {
 				var r:Array<StackFrame> = [];
 				for (info in result) {
@@ -348,13 +357,23 @@ class Main extends adapter.DebugSession {
 	}
 
 	override function threadsRequest(response:ThreadsResponse) {
-		// TODO: support other threads?
-		response.body = {threads: [{id: 0, name: "Interp"}]};
-		sendResponse(response);
+		connection.sendCommand(Protocol.GetThreads, {}, function(error, result) {
+			respond(response, error, function() {
+				response.body = {
+					threads: result
+				}
+			});
+		});
 	}
 
 	override function continueRequest(response:ContinueResponse, args:ContinueArguments) {
-		connection.sendCommand(Protocol.Continue, {}, (error, _) -> respond(response, error, () -> {}));
+		connection.sendCommand(Protocol.Continue, args == null ? {} : {threadId: args.threadId}, function(error, _) {
+			respond(response, error, function() {
+				response.body = {
+					allThreadsContinued: false
+				}
+			});
+		});
 	}
 
 	override function setBreakPointsRequest(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
