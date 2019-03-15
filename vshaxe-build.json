@@ -25,6 +25,25 @@
 				},
 				"main": "Main"
 			}
+		},
+		{
+			"name": "eval-debugger-tests",
+			"installCommands": [
+				["npm", "install"]
+			],
+			"args": {
+				"classPaths": [
+					"test/src"
+				],
+				"haxelibs": [
+					"vscode-debugadapter"
+				],
+				"output": {
+					"path": "bin/eval-debugger-test.js",
+					"target": "js"
+				},
+				"main": "TestEvalDebugger"
+			}
 		}
 	]
 }
