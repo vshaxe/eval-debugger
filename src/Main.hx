@@ -87,7 +87,9 @@ class Main extends adapter.DebugSession {
 		var parts = ~/[\.\-+]/g.split(output);
 		var majorVersion = Std.parseInt(parts[0]);
 		var preRelease = parts[3];
-		if (majorVersion < 4 || (majorVersion == 4 && preRelease == "preview")) // TODO: error on rc.1
+		var preReleaseVersion = parts[4];
+		var isRC1 = preRelease == "rc" && preReleaseVersion == "1";
+		if (majorVersion < 4 || (majorVersion == 4 && (preRelease == "preview" || isRC1)))
 			return error('eval-debugger requires Haxe 4.0.0-rc.2 or newer, found $output');
 
 		return true;
