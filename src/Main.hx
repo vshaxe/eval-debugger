@@ -139,7 +139,7 @@ class Main extends adapter.DebugSession {
 		server.listen(0, function() {
 			var port = server.address().port;
 			var haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
-			var haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env});
+			var haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env, cwd: cwd});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
 			haxeProcess.on(ChildProcessEvent.Exit, (_, _) -> exit());
