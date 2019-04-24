@@ -69,14 +69,14 @@ class Main extends adapter.DebugSession {
 		sendEvent(new adapter.DebugSession.TerminatedEvent(false));
 	}
 
-	function checkHaxeVersion(response:LaunchResponse, haxe:String, env:DynamicAccess<String>) {
+	function checkHaxeVersion(response:LaunchResponse, haxe:String, env:DynamicAccess<String>, cwd:String) {
 		function error(message:String) {
 			sendErrorResponse(cast response, 3000, message);
 			exit();
 			return false;
 		}
 
-		var versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env});
+		var versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env, cwd: cwd});
 		var output = (versionCheck.stderr : Buffer).toString().trim();
 		if (output == "")
 			output = (versionCheck.stdout : Buffer).toString().trim(); // haxe 4.0 prints -version output to stdout instead
@@ -109,7 +109,7 @@ class Main extends adapter.DebugSession {
 		for (key in args.haxeExecutable.env.keys())
 			env[key] = args.haxeExecutable.env[key];
 
-		if (!checkHaxeVersion(response, haxe, env)) {
+		if (!checkHaxeVersion(response, haxe, env, cwd)) {
 			return;
 		}
 
@@ -139,7 +139,7 @@ class Main extends adapter.DebugSession {
 		server.listen(0, function() {
 			var port = server.address().port;
 			var haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
-			var haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env});
+			var haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env, cwd: cwd});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
 			haxeProcess.on(ChildProcessEvent.Exit, (_, _) -> exit());
