@@ -155,7 +155,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	function onEvent<P>(type:NotificationMethod<P>, data:P) {
-		switch (type) {
+		switch type {
 			case Protocol.BreakpointStop:
 				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", data.threadId));
 			case Protocol.ExceptionStop:
