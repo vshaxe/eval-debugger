@@ -12,6 +12,9 @@
 			"installCommands": [
 				["npm", "install"]
 			],
+			"afterBuildCommands": [
+				["npx", "webpack", "--mode", "production", "--silent"]
+			],
 			"args": {
 				"classPaths": [
 					"src"
