@@ -1,17 +1,8 @@
 {
 	"inherit": "vshaxe-node",
-	"haxelibs": [
-		{
-			"name": "vscode-debugadapter",
-			"installArgs": ["git", "vscode-debugadapter", "https://github.com/vshaxe/vscode-debugadapter-extern"]
-		}
-	],
 	"targets": [
 		{
 			"name": "eval-debugger",
-			"installCommands": [
-				["npm", "install"]
-			],
 			"afterBuildCommands": [
 				["npx", "webpack", "--mode", "production", "--silent"]
 			],
