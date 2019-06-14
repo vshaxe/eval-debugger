@@ -343,7 +343,7 @@ class Main extends adapter.DebugSession {
 					r.push({
 						id: info.id,
 						name: info.name == "?" ? "Internal" : info.name,
-						source: info.source == null ? null : {path: info.source},
+						source: (info.source == null || info.name == "?") ? null : {path: info.source},
 						line: info.line,
 						column: info.column,
 						endLine: info.endLine,
