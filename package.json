@@ -10,9 +10,9 @@
 		"vscode-debugprotocol": "1.19.0"
 	},
 	"devDependencies": {
-		"lix": "^15.4.1",
-		"webpack": "^4.32.0",
-		"webpack-cli": "^3.3.2"
+		"lix": "^15.5.3",
+		"webpack": "^4.39.1",
+		"webpack-cli": "^3.3.6"
 	},
 	"scripts": {
 		"postinstall": "npx lix download"
