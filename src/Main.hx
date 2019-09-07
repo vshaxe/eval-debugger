@@ -348,7 +348,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 						column: info.column,
 						endLine: info.endLine,
 						endColumn: info.endColumn,
-						presentationHint: info.artificial ? Label : Normal
+						presentationHint: info.artificial ? Subtle : Normal
 					});
 				}
 				response.body = {
