@@ -1,5 +1,5 @@
 import haxe.DynamicAccess;
-import protocol.debug.Types;
+import vscode.debugProtocol.DebugProtocol;
 import js.node.Buffer;
 import js.node.Net;
 import js.node.ChildProcess;
@@ -11,7 +11,7 @@ import Protocol;
 using Lambda;
 using StringTools;
 
-typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments & {
+typedef EvalLaunchRequestArguments = LaunchRequestArguments & {
 	var cwd:String;
 	var args:Array<String>;
 	var stopOnEntry:Bool;
@@ -24,14 +24,14 @@ typedef EvalLaunchRequestArguments = protocol.debug.Types.LaunchRequestArguments
 }
 
 @:keep
-class Main extends adapter.DebugSession {
+class Main extends vscode.debugAdapter.DebugSession {
 	function traceToOutput(value:Dynamic, ?infos:haxe.PosInfos) {
 		var msg = Std.string(value);
 		if (infos != null && infos.customParams != null) {
 			msg += " " + infos.customParams.join(" ");
 		}
 		msg += "\n";
-		sendEvent(new adapter.DebugSession.OutputEvent(msg));
+		sendEvent(new vscode.debugAdapter.DebugSession.OutputEvent(msg));
 	}
 
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
@@ -66,7 +66,7 @@ class Main extends adapter.DebugSession {
 	}
 
 	function exit() {
-		sendEvent(new adapter.DebugSession.TerminatedEvent(false));
+		sendEvent(new vscode.debugAdapter.DebugSession.TerminatedEvent(false));
 	}
 
 	function checkHaxeVersion(response:LaunchResponse, haxe:String, env:DynamicAccess<String>, cwd:String) {
@@ -121,14 +121,14 @@ class Main extends adapter.DebugSession {
 			socket.on(SocketEvent.Error, error -> trace('Socket error: $error'));
 
 			function ready() {
-				sendEvent(new adapter.DebugSession.InitializedEvent());
+				sendEvent(new vscode.debugAdapter.DebugSession.InitializedEvent());
 			}
 
 			executePostLaunchActions(function() {
 				if (args.stopOnEntry) {
 					ready();
 					sendResponse(response);
-					sendEvent(new adapter.DebugSession.StoppedEvent("entry", 0));
+					sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("entry", 0));
 				} else {
 					ready();
 				}
@@ -147,23 +147,23 @@ class Main extends adapter.DebugSession {
 	}
 
 	function onStdout(data:Buffer) {
-		sendEvent(new adapter.DebugSession.OutputEvent(data.toString("utf-8"), stdout));
+		sendEvent(new vscode.debugAdapter.DebugSession.OutputEvent(data.toString("utf-8"), Stdout));
 	}
 
 	function onStderr(data:Buffer) {
-		sendEvent(new adapter.DebugSession.OutputEvent(data.toString("utf-8"), stderr));
+		sendEvent(new vscode.debugAdapter.DebugSession.OutputEvent(data.toString("utf-8"), Stderr));
 	}
 
 	function onEvent<P>(type:NotificationMethod<P>, data:P) {
 		switch type {
 			case Protocol.BreakpointStop:
-				sendEvent(new adapter.DebugSession.StoppedEvent("breakpoint", data.threadId));
+				sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("breakpoint", data.threadId));
 			case Protocol.ExceptionStop:
-				var evt = new adapter.DebugSession.StoppedEvent("exception", data.threadId);
+				var evt = new vscode.debugAdapter.DebugSession.StoppedEvent("exception", data.threadId);
 				evt.body.text = data.text;
 				sendEvent(evt);
 			case Protocol.ThreadEvent:
-				sendEvent(new adapter.DebugSession.ThreadEvent(data.reason, data.threadId));
+				sendEvent(new vscode.debugAdapter.DebugSession.ThreadEvent(data.reason, data.threadId));
 		}
 	}
 
@@ -203,7 +203,7 @@ class Main extends adapter.DebugSession {
 			respond(response, error, function() {
 				var scopes:Array<Scope> = [];
 				for (scopeInfo in result) {
-					var scope:Scope = cast new adapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
+					var scope:Scope = cast new vscode.debugAdapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
 					if (scopeInfo.pos != null) {
 						var p = scopeInfo.pos;
 						scope.source = {path: p.source};
@@ -310,28 +310,28 @@ class Main extends adapter.DebugSession {
 	override function pauseRequest(response:PauseResponse, args:PauseArguments) {
 		connection.sendCommand(Protocol.Pause, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("paused", args.threadId));
+			sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("paused", args.threadId));
 		});
 	}
 
 	override function stepInRequest(response:StepInResponse, args:StepInArguments) {
 		connection.sendCommand(Protocol.StepIn, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", args.threadId));
+			sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("step", args.threadId));
 		});
 	}
 
 	override function stepOutRequest(response:StepOutResponse, args:StepOutArguments) {
 		connection.sendCommand(Protocol.StepOut, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", args.threadId));
+			sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("step", args.threadId));
 		});
 	}
 
 	override function nextRequest(response:NextResponse, args:NextArguments) {
 		connection.sendCommand(Protocol.Next, {threadId: args.threadId}, function(error, _) {
 			respond(response, error, function() {});
-			sendEvent(new adapter.DebugSession.StoppedEvent("step", args.threadId));
+			sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("step", args.threadId));
 		});
 	}
 
@@ -348,7 +348,7 @@ class Main extends adapter.DebugSession {
 						column: info.column,
 						endLine: info.endLine,
 						endColumn: info.endColumn,
-						presentationHint: info.artificial ? label : normal
+						presentationHint: info.artificial ? Label : Normal
 					});
 				}
 				response.body = {
@@ -454,7 +454,7 @@ class Main extends adapter.DebugSession {
 				response.body = {
 					targets: [
 						for (item in result) {
-							var item2:protocol.debug.Types.CompletionItem = {label: item.label, type: item.type};
+							var item2:vscode.debugProtocol.DebugProtocol.CompletionItem = {label: item.label, type: item.type};
 							if (item.start != null)
 								item2.start = item.start;
 							item2;
@@ -477,6 +477,6 @@ class Main extends adapter.DebugSession {
 	}
 
 	static function main() {
-		adapter.DebugSession.run(Main);
+		vscode.debugAdapter.DebugSession.run(Main);
 	}
 }

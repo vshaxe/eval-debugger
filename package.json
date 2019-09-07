@@ -6,8 +6,8 @@
 		"node": "^6.5.0"
 	},
 	"dependencies": {
-		"vscode-debugadapter": "1.19.0",
-		"vscode-debugprotocol": "1.19.0"
+		"vscode-debugadapter": "1.36.0",
+		"vscode-debugprotocol": "1.36.0"
 	},
 	"devDependencies": {
 		"lix": "^15.5.3",

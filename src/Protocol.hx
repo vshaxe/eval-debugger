@@ -1,4 +1,4 @@
-import protocol.debug.Types.Thread;
+import vscode.debugProtocol.DebugProtocol.Thread;
 
 abstract RequestMethod<TParams, TResult>(String) to String {
 	public inline function new(method)
