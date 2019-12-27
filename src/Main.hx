@@ -25,6 +25,13 @@ typedef EvalLaunchRequestArguments = LaunchRequestArguments & {
 
 @:keep
 class Main extends vscode.debugAdapter.DebugSession {
+	var threads:Map<Int, Bool>;
+
+	public function new() {
+		super();
+		threads = new Map();
+	}
+
 	function traceToOutput(value:Dynamic, ?infos:haxe.PosInfos) {
 		var msg = Std.string(value);
 		if (infos != null && infos.customParams != null) {
@@ -160,8 +167,18 @@ class Main extends vscode.debugAdapter.DebugSession {
 				evt.body.text = data.text;
 				sendEvent(evt);
 			case Protocol.ThreadEvent:
+				threads[data.threadId] = data.reason != "exited";
 				sendEvent(new vscode.debugAdapter.DebugSession.ThreadEvent(data.reason, data.threadId));
 		}
+	}
+
+	override function disconnectRequest(response:DisconnectResponse, args:DisconnectArguments) {
+		for (id => alive in threads) {
+			if (alive) {
+				sendEvent(new vscode.debugAdapter.DebugSession.ThreadEvent("exited", id));
+			}
+		}
+		sendResponse(response);
 	}
 
 	var varReferenceMapping:Map<Int, Array<{id:Int, vars:Array<String>}>>;
@@ -357,6 +374,11 @@ class Main extends vscode.debugAdapter.DebugSession {
 
 	override function threadsRequest(response:ThreadsResponse) {
 		connection.sendCommand(Protocol.GetThreads, {}, function(error, result) {
+			if (result != null) {
+				for (thread in result) {
+					threads[thread.id] = true;
+				}
+			}
 			respond(response, error, function() {
 				response.body = {
 					threads: result
