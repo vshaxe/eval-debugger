@@ -10,7 +10,7 @@
 		"vscode-debugprotocol": "1.37.0"
 	},
 	"devDependencies": {
-		"lix": "^15.6.0-alpha.4",
+		"lix": "^15.8.2",
 		"webpack": "^4.41.5",
 		"webpack-cli": "^3.3.10"
 	},
