@@ -1,12 +1,12 @@
+import Protocol;
 import haxe.DynamicAccess;
-import vscode.debugProtocol.DebugProtocol;
 import js.node.Buffer;
-import js.node.Net;
 import js.node.ChildProcess;
+import js.node.Net;
 import js.node.child_process.ChildProcess.ChildProcessEvent;
 import js.node.net.Socket.SocketEvent;
 import js.node.stream.Readable.ReadableEvent;
-import Protocol;
+import vscode.debugProtocol.DebugProtocol;
 
 using Lambda;
 using StringTools;
@@ -59,7 +59,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 	}
 
 	var connection:Connection;
-	var postLaunchActions:Array<(Void->Void)->Void>;
+	var postLaunchActions:Array<(() -> Void)->Void>;
 	var launchArgs:EvalLaunchRequestArguments;
 
 	function executePostLaunchActions(callback) {
@@ -484,7 +484,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 		});
 	}
 
-	function respond<T>(response:Response<T>, error:Null<Message.Error>, f:Void->Void) {
+	function respond<T>(response:Response<T>, error:Null<Message.Error>, f:() -> Void) {
 		if (error != null) {
 			response.success = false;
 			response.message = error.message;
