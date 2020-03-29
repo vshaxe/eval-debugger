@@ -1,1 +1,1 @@
-[![Build Status](https://travis-ci.org/vshaxe/eval-debugger.svg?branch=master)](https://travis-ci.org/vshaxe/eval-debugger)
+[![CI](https://img.shields.io/github/workflow/status/vshaxe/eval-debugger/CI.svg?logo=github)](https://github.com/vshaxe/eval-debugger/actions?query=workflow%3ACI)
