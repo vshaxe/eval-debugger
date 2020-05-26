@@ -4,7 +4,7 @@
 		{
 			"name": "eval-debugger",
 			"afterBuildCommands": [
-				["npx", "webpack", "--mode", "production", "--silent"]
+				["npx", "ncc", "build", "bin/index.js", "-o", "bin", "-m", "-q"]
 			],
 			"args": {
 				"classPaths": [
@@ -14,7 +14,7 @@
 					"vscode-debugadapter"
 				],
 				"output": {
-					"path": "bin/adapter.js",
+					"path": "bin/index.js",
 					"target": "js"
 				},
 				"main": "Main"

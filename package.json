@@ -11,8 +11,7 @@
 	},
 	"devDependencies": {
 		"lix": "^15.9.0",
-		"webpack": "^4.43.0",
-		"webpack-cli": "^3.3.11"
+		"@zeit/ncc": "^0.22.3"
 	},
 	"scripts": {
 		"postinstall": "npx lix download"
