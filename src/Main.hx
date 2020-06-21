@@ -12,20 +12,20 @@ using Lambda;
 using StringTools;
 
 typedef EvalLaunchRequestArguments = LaunchRequestArguments & {
-	var cwd:String;
-	var args:Array<String>;
-	var stopOnEntry:Bool;
-	var haxeExecutable:{
-		var executable:String;
-		var env:DynamicAccess<String>;
+	final cwd:String;
+	final args:Array<String>;
+	final stopOnEntry:Bool;
+	final haxeExecutable:{
+		final executable:String;
+		final env:DynamicAccess<String>;
 	};
-	var mergeScopes:Bool;
-	var showGeneratedVariables:Bool;
+	final mergeScopes:Bool;
+	final showGeneratedVariables:Bool;
 }
 
 @:keep
 class Main extends vscode.debugAdapter.DebugSession {
-	var threads:Map<Int, Bool>;
+	final threads:Map<Int, Bool>;
 
 	public function new() {
 		super();
@@ -64,7 +64,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 
 	function executePostLaunchActions(callback) {
 		function loop() {
-			var action = postLaunchActions.shift();
+			final action = postLaunchActions.shift();
 			if (action == null)
 				return callback();
 			action(loop);
@@ -83,7 +83,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 			return false;
 		}
 
-		var versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env, cwd: cwd});
+		final versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env, cwd: cwd});
 		var output = (versionCheck.stderr : Buffer).toString().trim();
 		if (output == "")
 			output = (versionCheck.stdout : Buffer).toString().trim(); // haxe 4.0 prints -version output to stdout instead
@@ -91,8 +91,8 @@ class Main extends vscode.debugAdapter.DebugSession {
 		if (versionCheck.status != 0)
 			return error("Haxe version check failed: " + output);
 
-		var parts = ~/[\.\-+]/g.split(output);
-		var majorVersion = Std.parseInt(parts[0]);
+		final parts = ~/[\.\-+]/g.split(output);
+		final majorVersion = Std.parseInt(parts[0]);
 		if (majorVersion < 4)
 			return error('eval-debugger requires Haxe 4.0.0 or newer, found $output');
 
@@ -100,14 +100,14 @@ class Main extends vscode.debugAdapter.DebugSession {
 	}
 
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
-		var args:EvalLaunchRequestArguments = cast args;
+		final args:EvalLaunchRequestArguments = cast args;
 		launchArgs = args;
-		var haxeArgs = args.args;
-		var cwd = args.cwd;
+		final haxeArgs = args.args;
+		final cwd = args.cwd;
 
-		var haxe = args.haxeExecutable.executable;
+		final haxe = args.haxeExecutable.executable;
 
-		var env = new haxe.DynamicAccess();
+		final env = new haxe.DynamicAccess();
 		for (key in js.Node.process.env.keys())
 			env[key] = js.Node.process.env[key];
 		for (key in args.haxeExecutable.env.keys())
@@ -139,11 +139,11 @@ class Main extends vscode.debugAdapter.DebugSession {
 			});
 		}
 
-		var server = Net.createServer(onConnected);
+		final server = Net.createServer(onConnected);
 		server.listen(0, function() {
-			var port = server.address().port;
-			var haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
-			var haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env, cwd: cwd});
+			final port = server.address().port;
+			final haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
+			final haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env, cwd: cwd});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
 			haxeProcess.on(ChildProcessEvent.Exit, (_, _) -> exit());
@@ -163,7 +163,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 			case Protocol.BreakpointStop:
 				sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("breakpoint", data.threadId));
 			case Protocol.ExceptionStop:
-				var evt = new vscode.debugAdapter.DebugSession.StoppedEvent("exception", data.threadId);
+				final evt = new vscode.debugAdapter.DebugSession.StoppedEvent("exception", data.threadId);
 				evt.body.text = data.text;
 				sendEvent(evt);
 			case Protocol.ThreadEvent:
@@ -185,12 +185,12 @@ class Main extends vscode.debugAdapter.DebugSession {
 
 	function mergeScopes(scopes:Array<Scope>) {
 		varReferenceMapping = [];
-		var mergedScopes = new Map<String, Scope>();
+		final mergedScopes = new Map<String, Scope>();
 		for (scope in scopes) {
 			var merged = mergedScopes[scope.name];
-			if (merged == null)
+			if (merged == null) {
 				merged = scope;
-			else {
+			} else {
 				if (scope.line < merged.line)
 					merged.line = scope.line;
 				if (scope.column < merged.line)
@@ -202,7 +202,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 			}
 			mergedScopes[merged.name] = merged;
 
-			var mergedRef = merged.variablesReference;
+			final mergedRef = merged.variablesReference;
 			var mapping = varReferenceMapping[mergedRef];
 			if (mapping == null)
 				mapping = [];
@@ -217,9 +217,9 @@ class Main extends vscode.debugAdapter.DebugSession {
 			respond(response, error, function() {
 				var scopes:Array<Scope> = [];
 				for (scopeInfo in result) {
-					var scope:Scope = cast new vscode.debugAdapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
+					final scope:Scope = cast new vscode.debugAdapter.DebugSession.Scope(scopeInfo.name, scopeInfo.id);
 					if (scopeInfo.pos != null) {
-						var p = scopeInfo.pos;
+						final p = scopeInfo.pos;
 						scope.source = {path: p.source};
 						scope.line = p.line;
 						scope.column = p.column;
@@ -241,11 +241,11 @@ class Main extends vscode.debugAdapter.DebugSession {
 		if (launchArgs.mergeScopes && varReferenceMapping.exists(args.variablesReference))
 			scopes = varReferenceMapping[args.variablesReference].copy();
 
-		var mergedVars = [];
-		var names:Map<String, Int> = [];
+		final mergedVars = [];
+		final names:Map<String, Int> = [];
 
 		function getDisplayName(varInfo:VarInfo) {
-			var name = varInfo.name;
+			final name = varInfo.name;
 			if (names.exists(name)) {
 				return '${name} - line ${varInfo.line}';
 			} else {
@@ -254,15 +254,15 @@ class Main extends vscode.debugAdapter.DebugSession {
 			}
 		}
 		function requestVars() {
-			var scope = scopes.shift();
+			final scope = scopes.shift();
 			connection.sendCommand(Protocol.GetVariables, {id: scope.id}, function(error, result) {
 				for (varInfo in result) {
 					if (varInfo.generated && !launchArgs.showGeneratedVariables) {
 						continue;
 					}
-					var displayName = getDisplayName(varInfo);
+					final displayName = getDisplayName(varInfo);
 					scope.vars.push(displayName);
-					var v = {
+					final v = {
 						name: displayName,
 						value: varInfo.value,
 						type: varInfo.type,
@@ -286,7 +286,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 	override function setVariableRequest(response:SetVariableResponse, args:SetVariableArguments) {
 		var realRef = args.variablesReference;
 		function getRealName() {
-			var index = args.name.indexOf(" ");
+			final index = args.name.indexOf(" ");
 			if (index == -1) {
 				return args.name;
 			}
@@ -352,7 +352,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 	override function stackTraceRequest(response:StackTraceResponse, args:StackTraceArguments) {
 		connection.sendCommand(Protocol.StackTrace, {threadId: args.threadId}, function(error, result) {
 			respond(response, error, function() {
-				var r:Array<StackFrame> = [];
+				final r:Array<StackFrame> = [];
 				for (info in result) {
 					r.push({
 						id: info.id,
@@ -420,11 +420,11 @@ class Main extends vscode.debugAdapter.DebugSession {
 	}
 
 	function doSetBreakpoints(response:SetBreakpointsResponse, args:SetBreakpointsArguments) {
-		var params:SetBreakpointsParams = {
+		final params:SetBreakpointsParams = {
 			file: args.source.path,
 			breakpoints: [
 				for (sbp in args.breakpoints) {
-					var bp:{line:Int, ?column:Int, ?condition:String} = {line: sbp.line};
+					final bp:{line:Int, ?column:Int, ?condition:String} = {line: sbp.line};
 					if (sbp.column != null)
 						bp.column = sbp.column;
 					if (sbp.condition != null)
@@ -473,7 +473,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 				response.body = {
 					targets: [
 						for (item in result) {
-							var item2:vscode.debugProtocol.DebugProtocol.CompletionItem = {label: item.label, type: item.type};
+							final item2:vscode.debugProtocol.DebugProtocol.CompletionItem = {label: item.label, type: item.type};
 							if (item.start != null)
 								item2.start = item.start;
 							item2;

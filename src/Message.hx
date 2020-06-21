@@ -1,12 +1,12 @@
 typedef Message = {
-	var ?id:Int;
-	var ?method:String;
-	var ?params:Dynamic;
-	var ?result:Dynamic;
-	var ?error:Error;
+	final ?id:Int;
+	final ?method:String;
+	final ?params:Dynamic;
+	final ?result:Dynamic;
+	final ?error:Error;
 }
 
 typedef Error = {
-	var code:Int;
-	var message:String;
+	final code:Int;
+	final message:String;
 }

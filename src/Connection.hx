@@ -1,18 +1,18 @@
-import js.node.stream.Readable.ReadableEvent;
-import js.node.net.Socket;
-import js.node.Buffer;
 import Protocol;
+import js.node.Buffer;
+import js.node.net.Socket;
+import js.node.stream.Readable.ReadableEvent;
 
 typedef RequestCallback<T> = (Null<Message.Error>, Null<T>) -> Void;
 
 class Connection {
-	var socket:Socket;
+	final socket:Socket;
 	var buffer:Buffer;
 	var index:Int;
 	var nextMessageLength:Int;
-	var callbacks:Map<Int, RequestCallback<Dynamic>>;
+	final callbacks:Map<Int, RequestCallback<Dynamic>>;
 
-	static inline var DEFAULT_BUFFER_SIZE = 4096;
+	static inline final DEFAULT_BUFFER_SIZE = 4096;
 
 	public function new(socket) {
 		this.socket = socket;
@@ -28,7 +28,8 @@ class Connection {
 		if (buffer.length - index >= data.length) {
 			data.copy(buffer, index, 0, data.length);
 		} else {
-			var newSize = (Math.ceil((index + data.length) / DEFAULT_BUFFER_SIZE) + 1) * DEFAULT_BUFFER_SIZE; // copied from the language-server protocol reader
+			// copied from the language-server protocol reader
+			final newSize = (Math.ceil((index + data.length) / DEFAULT_BUFFER_SIZE) + 1) * DEFAULT_BUFFER_SIZE;
 			if (index == 0) {
 				buffer = new Buffer(newSize);
 				data.copy(buffer, 0, 0, data.length);
@@ -51,11 +52,11 @@ class Connection {
 			}
 			if (index < nextMessageLength)
 				return;
-			var bytes = buffer.toString("utf-8", 0, nextMessageLength);
+			final bytes = buffer.toString("utf-8", 0, nextMessageLength);
 			buffer.copy(buffer, 0, nextMessageLength);
 			index -= nextMessageLength;
 			nextMessageLength = -1;
-			var json = haxe.Json.parse(bytes);
+			final json = haxe.Json.parse(bytes);
 			onMessage(json);
 		}
 	}
@@ -67,7 +68,7 @@ class Connection {
 		if (msg.id == null) {
 			onEvent(new NotificationMethod(msg.method), msg.params);
 		} else {
-			var callback = callbacks[msg.id];
+			final callback = callbacks[msg.id];
 			if (callback != null) {
 				callbacks.remove(msg.id);
 				callback(msg.error, msg.result);
@@ -78,15 +79,15 @@ class Connection {
 	var nextRequestId = 1;
 
 	public function sendCommand<P, R>(name:RequestMethod<P, R>, params:P, ?callback:RequestCallback<R>) {
-		var requestId = nextRequestId++;
-		var cmd = haxe.Json.stringify({
+		final requestId = nextRequestId++;
+		final cmd = haxe.Json.stringify({
 			id: requestId,
 			method: name,
 			params: params
 		});
 		trace('Sending command: $cmd');
-		var body = Buffer.from(cmd, "utf-8");
-		var header = Buffer.alloc(2);
+		final body = Buffer.from(cmd, "utf-8");
+		final header = Buffer.alloc(2);
 		header.writeUInt16LE(body.length, 0);
 		socket.write(header);
 		socket.write(body);
