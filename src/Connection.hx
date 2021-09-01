@@ -16,7 +16,7 @@ class Connection {
 
 	public function new(socket) {
 		this.socket = socket;
-		buffer = new Buffer(DEFAULT_BUFFER_SIZE);
+		buffer = Buffer.alloc(DEFAULT_BUFFER_SIZE);
 		index = 0;
 		nextMessageLength = -1;
 		callbacks = new Map();
@@ -31,7 +31,7 @@ class Connection {
 			// copied from the language-server protocol reader
 			final newSize = (Math.ceil((index + data.length) / DEFAULT_BUFFER_SIZE) + 1) * DEFAULT_BUFFER_SIZE;
 			if (index == 0) {
-				buffer = new Buffer(newSize);
+				buffer = Buffer.alloc(newSize);
 				data.copy(buffer, 0, 0, data.length);
 			} else {
 				buffer = Buffer.concat([buffer.slice(0, index), data], newSize);
