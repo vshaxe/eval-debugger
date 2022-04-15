@@ -21,6 +21,7 @@ typedef EvalLaunchRequestArguments = LaunchRequestArguments & {
 	};
 	final mergeScopes:Bool;
 	final showGeneratedVariables:Bool;
+	final trace:Bool; // if set to true sends trace messages as DebugSession.OutputEvents
 }
 
 @:keep
@@ -42,7 +43,6 @@ class Main extends vscode.debugAdapter.DebugSession {
 	}
 
 	override function initializeRequest(response:InitializeResponse, args:InitializeRequestArguments) {
-		// haxe.Log.trace = traceToOutput;
 		response.body.supportsSetVariable = true;
 		response.body.supportsEvaluateForHovers = true;
 		response.body.supportsConditionalBreakpoints = true;
@@ -102,6 +102,9 @@ class Main extends vscode.debugAdapter.DebugSession {
 	override function launchRequest(response:LaunchResponse, args:LaunchRequestArguments) {
 		final args:EvalLaunchRequestArguments = cast args;
 		launchArgs = args;
+		if (launchArgs.trace) {
+			haxe.Log.trace = traceToOutput;
+		}
 		final haxeArgs = args.args;
 		final cwd = args.cwd;
 
