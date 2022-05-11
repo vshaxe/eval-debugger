@@ -1,4 +1,4 @@
--D vscode-debugadapter=1.36.0
-# @install: lix --silent download "haxelib:/vscode-debugadapter#1.36.0" into vscode-debugadapter/1.36.0/haxelib
+# @install: lix --silent download "haxelib:/vscode-debugadapter#1.41.0" into vscode-debugadapter/1.41.0/haxelib
 -lib hxnodejs
--cp ${HAXE_LIBCACHE}/vscode-debugadapter/1.36.0/haxelib/src
+-cp ${HAXE_LIBCACHE}/vscode-debugadapter/1.41.0/haxelib/src
+-D vscode-debugadapter=1.41.0
