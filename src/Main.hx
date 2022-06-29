@@ -127,17 +127,11 @@ class Main extends vscode.debugAdapter.DebugSession {
 
 			socket.on(SocketEvent.Error, error -> trace('Socket error: $error'));
 
-			function ready() {
-				sendEvent(new vscode.debugAdapter.DebugSession.InitializedEvent());
-			}
-
 			executePostLaunchActions(function() {
+				sendEvent(new vscode.debugAdapter.DebugSession.InitializedEvent());
+				sendResponse(response);
 				if (args.stopOnEntry) {
-					ready();
-					sendResponse(response);
 					sendEvent(new vscode.debugAdapter.DebugSession.StoppedEvent("entry", 0));
-				} else {
-					ready();
 				}
 			});
 		}
