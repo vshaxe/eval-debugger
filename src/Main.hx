@@ -422,10 +422,8 @@ class Main extends vscode.debugAdapter.DebugSession {
 			breakpoints: [
 				for (sbp in args.breakpoints) {
 					final bp:{line:Int, ?column:Int, ?condition:String} = {line: sbp.line};
-					if (sbp.column != null)
-						bp.column = sbp.column;
-					if (sbp.condition != null)
-						bp.condition = sbp.condition;
+					if (sbp.column != null) bp.column = sbp.column;
+					if (sbp.condition != null) bp.condition = sbp.condition;
 					bp;
 				}
 			]
@@ -471,8 +469,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 					targets: [
 						for (item in result) {
 							final item2:vscode.debugProtocol.DebugProtocol.CompletionItem = {label: item.label, type: item.type};
-							if (item.start != null)
-								item2.start = item.start;
+							if (item.start != null) item2.start = item.start;
 							item2;
 						}
 					]
