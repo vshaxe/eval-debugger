@@ -1,4 +1,3 @@
-import Protocol;
 import haxe.DynamicAccess;
 import js.node.Buffer;
 import js.node.ChildProcess;
@@ -6,6 +5,7 @@ import js.node.Net;
 import js.node.child_process.ChildProcess.ChildProcessEvent;
 import js.node.net.Socket.SocketEvent;
 import js.node.stream.Readable.ReadableEvent;
+import Protocol;
 import vscode.debugProtocol.DebugProtocol;
 
 using Lambda;
@@ -83,7 +83,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 			return false;
 		}
 
-		final versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env, cwd: cwd});
+		final versionCheck = ChildProcess.spawnSync(haxe, ["-version"], {env: env, cwd: cwd, shell: true});
 		var output = (versionCheck.stderr : Buffer).toString().trim();
 		if (output == "")
 			output = (versionCheck.stdout : Buffer).toString().trim(); // haxe 4.0 prints -version output to stdout instead
@@ -140,7 +140,12 @@ class Main extends vscode.debugAdapter.DebugSession {
 		server.listen(0, function() {
 			final port = server.address().port;
 			final haxeArgs = ["--cwd", cwd, "-D", 'eval-debugger=127.0.0.1:$port'].concat(haxeArgs);
-			final haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {stdio: Pipe, env: env, cwd: cwd});
+			final haxeProcess = ChildProcess.spawn(haxe, haxeArgs, {
+				stdio: Pipe,
+				env: env,
+				cwd: cwd,
+				shell: true
+			});
 			haxeProcess.stdout.on(ReadableEvent.Data, onStdout);
 			haxeProcess.stderr.on(ReadableEvent.Data, onStderr);
 			haxeProcess.on(ChildProcessEvent.Exit, (_, _) -> exit());
