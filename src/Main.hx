@@ -108,7 +108,7 @@ class Main extends vscode.debugAdapter.DebugSession {
 		final haxeArgs = args.args;
 		final cwd = args.cwd;
 
-		final haxe = args.haxeExecutable.executable;
+		final haxe = shellEscapeCommand(args.haxeExecutable.executable);
 
 		final env = new haxe.DynamicAccess();
 		for (key in js.Node.process.env.keys())
@@ -492,6 +492,17 @@ class Main extends vscode.debugAdapter.DebugSession {
 			f();
 		}
 		sendResponse(response);
+	}
+
+	function shellEscapeCommand(command:String):String {
+		if (!~/[^a-zA-Z0-9_.:\/\\-]/.match(command)) {
+			return command;
+		}
+		if (command.startsWith('"') && command.endsWith('"')) {
+			return command;
+		}
+
+		return '"' + command.replace('"', '\\"') + '"';
 	}
 
 	static function main() {
