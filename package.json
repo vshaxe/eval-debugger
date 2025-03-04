@@ -2,9 +2,6 @@
 	"name": "haxe-eval-debugger",
 	"version": "0.0.1",
 	"description": "Debug adapter for Haxe macro interpreter",
-	"engines": {
-		"node": "^14.19.2"
-	},
 	"dependencies": {
 		"vscode-debugadapter": "1.41.1",
 		"vscode-debugprotocol": "1.41.0"
